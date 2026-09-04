@@ -1,0 +1,7 @@
+estimator,arm,subject,att,se,n_schools,n_obs
+CDH,genuine 6h+ (stable),language,0.015,0.0157,,49933
+CDH,genuine 6h+ (stable),mathematics,0.0278,0.0196,,49793
+CS,genuine 6h+ (stable),language,0.0227,0.0347,5897,26624
+CS,genuine 6h+ (stable),mathematics,0.0623,0.044,5892,26573
+CDH,1h+ 5h (stable),language,0.0045,0.0216,,39457
+CDH,1h+ 5h (stable),mathematics,0.0209,0.0256,,39307

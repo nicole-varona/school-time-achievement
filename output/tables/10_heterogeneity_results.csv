@@ -1,0 +1,57 @@
+dimension,group,sample,subject,att,se,sw1,n_sch
+context quartile,1,full,language,0.0346,0.0229,1138,9503
+context quartile,1,full,mathematics,0.0692,0.0284,1129,9503
+context quartile,1,excl. 2023 cohort,language,0.0467,0.0258,961,7620
+context quartile,1,excl. 2023 cohort,mathematics,0.075,0.0318,955,7620
+context quartile,2,full,language,0.0096,0.0211,656,3824
+context quartile,2,full,mathematics,0.0077,0.027,655,3824
+context quartile,2,excl. 2023 cohort,language,-0.0042,0.0225,589,3317
+context quartile,2,excl. 2023 cohort,mathematics,-0.0063,0.0291,588,3317
+context quartile,3,full,language,0.0015,0.0199,507,3045
+context quartile,3,full,mathematics,0.0097,0.0238,507,3045
+context quartile,3,excl. 2023 cohort,language,0.0102,0.021,462,2759
+context quartile,3,excl. 2023 cohort,mathematics,0.0248,0.0249,462,2759
+context quartile,4,full,language,0.0109,0.02,527,3019
+context quartile,4,full,mathematics,0.0217,0.0211,526,3019
+context quartile,4,excl. 2023 cohort,language,0.0074,0.0212,490,2797
+context quartile,4,excl. 2023 cohort,mathematics,0.022,0.0223,489,2797
+SES tercile,1,full,language,0.0452,0.03,767,6649
+SES tercile,1,full,mathematics,0.0465,0.0382,759,6649
+SES tercile,1,excl. 2023 cohort,language,0.0541,0.0337,640,5278
+SES tercile,1,excl. 2023 cohort,mathematics,0.0813,0.0434,634,5278
+SES tercile,2,full,language,0.0027,0.0172,1120,7189
+SES tercile,2,full,mathematics,0.0359,0.0216,1118,7189
+SES tercile,2,excl. 2023 cohort,language,0.0051,0.019,970,6083
+SES tercile,2,excl. 2023 cohort,mathematics,0.0231,0.0235,969,6083
+SES tercile,3,full,language,0.0149,0.0146,904,5138
+SES tercile,3,full,mathematics,0.0085,0.0153,904,5138
+SES tercile,3,excl. 2023 cohort,language,0.0104,0.0152,859,4816
+SES tercile,3,excl. 2023 cohort,mathematics,0.0028,0.016,859,4816
+region,Centro/Pampeana,full,language,0.017,0.014,1895,11849
+region,Centro/Pampeana,full,mathematics,0.0282,0.0172,1892,11849
+region,Centro/Pampeana,excl. 2023 cohort,language,0.0187,0.0149,1755,10060
+region,Centro/Pampeana,excl. 2023 cohort,mathematics,0.0288,0.0182,1753,10060
+region,Cuyo,full,language,0.019,0.0414,346,1618
+region,Cuyo,full,mathematics,-0.0901,0.0504,342,1618
+region,Cuyo,excl. 2023 cohort,language,0.0323,0.0434,329,1571
+region,Cuyo,excl. 2023 cohort,mathematics,-0.0741,0.0516,325,1571
+region,NEA,full,language,-0.0158,0.0475,189,3771
+region,NEA,full,mathematics,0.0268,0.0602,187,3771
+region,NEA,excl. 2023 cohort,language,-0.0381,0.0679,124,2799
+region,NEA,excl. 2023 cohort,mathematics,0.0397,0.0749,124,2799
+region,NOA,full,language,0.0204,0.0384,389,4024
+region,NOA,full,mathematics,0.0881,0.0455,387,4024
+region,NOA,excl. 2023 cohort,language,0.0148,0.0462,265,3279
+region,NOA,excl. 2023 cohort,mathematics,0.1135,0.0579,264,3279
+region,Patagonia,full,language,0.0025,0.0324,206,1084
+region,Patagonia,full,mathematics,0.0353,0.034,205,1084
+region,Patagonia,excl. 2023 cohort,language,0.0101,0.034,190,1046
+region,Patagonia,excl. 2023 cohort,mathematics,0.0373,0.0353,189,1046
+sector,private,full,language,0.0161,0.017,677,3850
+sector,private,full,mathematics,0.0045,0.0177,676,3850
+sector,public,full,language,0.0151,0.0141,2346,18457
+sector,public,full,mathematics,0.0272,0.0174,2335,18457
+area,rural,full,language,0.0436,0.0269,1074,10006
+area,rural,full,mathematics,0.0305,0.0334,1063,10006
+area,urban,full,language,0.0043,0.0107,1949,12301
+area,urban,full,mathematics,0.0234,0.0128,1948,12301

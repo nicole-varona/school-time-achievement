@@ -1,0 +1,7 @@
+definition,design,subject,placebo_aggregate,se_aggregate,switchers_aggregate,classes,min_switchers,placebo_min,placebo_max,spread,placebo_weighted,opposite_signs
+main,five censuses,language,-0.0071,0.0102,4146,3,184,-0.0142,0.0208,0.0351,-0.0079,TRUE
+main,five censuses,mathematics,-0.025,0.0129,4113,3,184,-0.0483,0.0291,0.0774,-0.0281,TRUE
+main,six waves,language,0.016,0.0163,1258,3,187,0.0103,0.0307,0.0205,0.0168,FALSE
+main,six waves,mathematics,0.0227,0.0193,1251,3,187,-0.0341,0.058,0.0921,0.0282,TRUE
+main,three censuses,language,0.027,0.0171,1005,2,384,0.0183,0.0431,0.0248,0.0281,FALSE
+main,three censuses,mathematics,0.0402,0.0211,1002,2,383,0.0027,0.1075,0.1048,0.0441,FALSE

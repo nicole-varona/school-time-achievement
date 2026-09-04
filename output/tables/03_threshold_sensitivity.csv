@@ -1,0 +1,6 @@
+threshold,treated_school_years,pct_of_school_years,schools_ever_treated,pct_of_schools
+0.01,80791,17.5,11978,34.7
+0.1,79902,17.4,11647,33.8
+0.25,75313,16.4,11230,32.6
+0.5,65405,14.2,10749,31.2
+0.9,53825,11.7,10035,29.1

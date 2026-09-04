@@ -1,0 +1,13 @@
+diagnostic,quantity,value
+switcher direction,switcher-waves in,10930
+switcher direction,switcher-waves out,4481
+switcher direction,% in minority direction,29.1
+province-year trends: feasibility,% of transition variance retained,77.9
+province-year trends: feasibility,% of level variance retained,72
+province-year trends: feasibility,province-year cells,120
+province-year trends: feasibility,cells with no internal variation,5
+vcov of effects and placebos (mathematics),eigenvalue 1,0.001611
+vcov of effects and placebos (mathematics),eigenvalue 2,0.000684
+vcov of effects and placebos (mathematics),eigenvalue 3,0.000408
+vcov of effects and placebos (mathematics),eigenvalue 4,-0.000834
+vcov of effects and placebos (mathematics),positive semi-definite,0

@@ -1,0 +1,7 @@
+att,se,n_schools,ses_covariate,subject,quantity,value
+0.0051,0.0258,13686,"predetermined (pre-adoption, in use)",language,,
+0.0486,0.0289,13680,"predetermined (pre-adoption, in use)",mathematics,,
+,,,,,schools with the 2016 SES value,19216
+,,,,,schools with the predetermined value,18052
+,,,,,schools with no pre-treatment wave,4883
+,,,,,median pre-treatment waves used,4

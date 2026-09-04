@@ -1,0 +1,361 @@
+province,year,pct_treated
+Mendoza,2011,24.3
+Mendoza,2012,31.1
+Mendoza,2013,23.3
+Mendoza,2014,23.6
+Mendoza,2015,23.4
+Mendoza,2016,22.5
+Mendoza,2017,20.7
+Mendoza,2018,19.6
+Mendoza,2019,17.9
+Mendoza,2020,5.5
+Mendoza,2021,7.1
+Mendoza,2022,19.9
+Mendoza,2023,28.1
+Mendoza,2024,25.4
+Mendoza,2025,25
+Santa Fe,2011,5.1
+Santa Fe,2012,5.1
+Santa Fe,2013,4.9
+Santa Fe,2014,5.2
+Santa Fe,2015,5.4
+Santa Fe,2016,7.7
+Santa Fe,2017,9.5
+Santa Fe,2018,9.6
+Santa Fe,2019,11.2
+Santa Fe,2020,11.2
+Santa Fe,2021,12.1
+Santa Fe,2022,11.8
+Santa Fe,2023,80
+Santa Fe,2024,11.7
+Santa Fe,2025,99.1
+Buenos Aires,2012,4.5
+Buenos Aires,2013,4.4
+Buenos Aires,2014,4.4
+Buenos Aires,2015,6
+Buenos Aires,2016,6.4
+Buenos Aires,2017,6.6
+Buenos Aires,2018,6.8
+Buenos Aires,2019,6.9
+Buenos Aires,2020,6.9
+Buenos Aires,2021,7
+Buenos Aires,2022,6.9
+Buenos Aires,2023,8.4
+Buenos Aires,2024,9.6
+Buenos Aires,2025,10.6
+Buenos Aires,2011,4.1
+Chaco,2011,6.3
+Chaco,2012,6.4
+Chaco,2013,7.4
+Chaco,2017,6.5
+Chaco,2018,6.8
+Chaco,2019,6.7
+Chaco,2020,7.1
+Chaco,2021,7.3
+Chaco,2022,7.5
+Chaco,2023,93.7
+Chaco,2025,93.4
+Entre Ríos,2011,2.7
+Entre Ríos,2012,3.3
+Entre Ríos,2013,4.2
+Entre Ríos,2014,6
+Entre Ríos,2015,7
+Entre Ríos,2016,7.5
+Entre Ríos,2017,7
+Entre Ríos,2018,7
+Entre Ríos,2019,6.5
+Entre Ríos,2020,7.1
+Entre Ríos,2021,6.6
+Entre Ríos,2022,6.6
+Entre Ríos,2023,7.9
+Entre Ríos,2024,7.4
+Entre Ríos,2025,6.8
+Santiago del Estero,2011,2.4
+Santiago del Estero,2012,2.9
+Santiago del Estero,2013,2.8
+Santiago del Estero,2014,3.1
+Santiago del Estero,2015,3.1
+Santiago del Estero,2016,5.2
+Santiago del Estero,2017,4.3
+Santiago del Estero,2018,4.8
+Santiago del Estero,2019,5
+Santiago del Estero,2020,4.9
+Santiago del Estero,2021,5.3
+Santiago del Estero,2022,5.5
+Santiago del Estero,2023,10.3
+Santiago del Estero,2024,10.4
+Santiago del Estero,2025,12.1
+Ciudad de Buenos Aires,2011,36.1
+Tucumán,2019,10.1
+Tucumán,2020,9.7
+Tucumán,2021,9.7
+Tucumán,2022,10.1
+Tucumán,2023,33.7
+Tucumán,2024,9.3
+Tucumán,2025,11.7
+Córdoba,2011,8.8
+Córdoba,2012,10.1
+Córdoba,2013,11.1
+Córdoba,2014,13.3
+Córdoba,2015,20.1
+Córdoba,2016,20.8
+Córdoba,2017,20.2
+Córdoba,2018,22.8
+Córdoba,2019,25.4
+Córdoba,2020,26.4
+Córdoba,2021,25.7
+Córdoba,2022,24.1
+Córdoba,2023,44.1
+Córdoba,2024,49.1
+Córdoba,2025,50.3
+Misiones,2011,4.7
+Misiones,2012,5.2
+Misiones,2013,7.7
+Misiones,2014,8
+Misiones,2015,9.1
+Misiones,2016,10.5
+Misiones,2017,10
+Misiones,2018,10.6
+Misiones,2019,10.3
+Misiones,2020,10.8
+Misiones,2021,10.8
+Misiones,2022,10.9
+Misiones,2023,10.3
+Misiones,2024,10.9
+Misiones,2025,10.9
+Jujuy,2011,25.8
+Jujuy,2012,26
+Jujuy,2013,24.4
+Jujuy,2014,24.4
+Jujuy,2015,26.3
+Jujuy,2016,28.4
+Jujuy,2017,28.5
+Jujuy,2018,30.4
+Jujuy,2019,31
+Jujuy,2020,31.6
+Jujuy,2021,31.9
+Jujuy,2022,31.2
+Jujuy,2023,71.1
+Jujuy,2024,61
+Jujuy,2025,59
+San Luis,2019,5.1
+San Luis,2020,5
+San Luis,2021,4.8
+San Luis,2022,4.7
+San Luis,2023,4.9
+San Luis,2024,4.6
+San Luis,2025,4.7
+Tucumán,2011,11.6
+Tucumán,2012,11.1
+Tucumán,2013,10.2
+Tucumán,2014,11.1
+Tucumán,2015,10.6
+Tucumán,2016,9.9
+Tucumán,2017,10.4
+Tucumán,2018,9.8
+Ciudad de Buenos Aires,2012,39.6
+Ciudad de Buenos Aires,2013,41.5
+Ciudad de Buenos Aires,2014,41.9
+Ciudad de Buenos Aires,2015,44.9
+Ciudad de Buenos Aires,2016,51.6
+Ciudad de Buenos Aires,2017,48.8
+Ciudad de Buenos Aires,2018,50.3
+Ciudad de Buenos Aires,2019,50.5
+Ciudad de Buenos Aires,2020,51.4
+Ciudad de Buenos Aires,2021,51.1
+Ciudad de Buenos Aires,2022,52.2
+Ciudad de Buenos Aires,2023,53.5
+Ciudad de Buenos Aires,2024,54.1
+Ciudad de Buenos Aires,2025,54.8
+Salta,2011,23.8
+Chubut,2011,15.9
+Chubut,2012,16.5
+Chubut,2013,18.3
+Chubut,2014,18.1
+Chubut,2015,22.7
+Chubut,2016,23
+Chubut,2017,23.1
+Chubut,2018,23.9
+Chubut,2019,24.4
+Chubut,2020,24.3
+Chubut,2021,24
+Chubut,2022,24.3
+Chubut,2023,31.2
+Chubut,2024,22.3
+Chubut,2025,24.5
+La Rioja,2011,7.6
+La Rioja,2012,11.1
+La Rioja,2013,10.2
+La Rioja,2014,9.7
+La Rioja,2015,10.3
+La Rioja,2016,11.9
+La Rioja,2017,8.5
+La Rioja,2018,9.6
+La Rioja,2019,10.3
+La Rioja,2020,9.7
+La Rioja,2021,9
+La Rioja,2022,9.6
+La Rioja,2023,29.9
+La Rioja,2024,27.4
+La Rioja,2025,28.5
+Salta,2012,24.8
+Salta,2013,27.2
+Salta,2014,29.6
+Salta,2015,31.2
+Salta,2016,33.5
+Salta,2017,32.7
+Salta,2018,35.7
+Salta,2019,36
+Salta,2020,36.2
+Salta,2021,36.6
+Salta,2022,37.8
+Salta,2023,38.6
+Salta,2024,36.5
+Salta,2025,36.2
+Corrientes,2011,1.1
+Corrientes,2012,1.5
+Corrientes,2013,1.7
+Corrientes,2014,1.3
+Corrientes,2015,2.6
+Corrientes,2016,3.6
+Corrientes,2017,1.9
+Corrientes,2018,1.4
+Corrientes,2019,1.5
+Corrientes,2020,1.6
+Corrientes,2021,1.8
+Corrientes,2022,2.2
+Corrientes,2023,5.3
+Corrientes,2024,4.2
+Corrientes,2025,3.5
+Chaco,2014,7.3
+Chaco,2015,7.6
+Chaco,2016,7.3
+Chaco,2024,93.5
+Neuquén,2011,11.7
+Neuquén,2012,11.5
+Neuquén,2013,12.7
+Neuquén,2014,13.5
+Neuquén,2015,15.8
+Neuquén,2016,16
+Neuquén,2017,14.9
+Neuquén,2018,15.5
+Neuquén,2019,15.2
+Neuquén,2020,15.7
+Neuquén,2021,15.4
+Neuquén,2022,14.6
+Neuquén,2023,18.1
+Neuquén,2024,22.5
+Neuquén,2025,23.9
+La Pampa,2019,18.4
+La Pampa,2020,18.7
+La Pampa,2021,18.8
+La Pampa,2022,18.7
+La Pampa,2023,32.2
+La Pampa,2024,31.4
+Catamarca,2013,13.2
+Catamarca,2014,14.4
+Santa Cruz,2011,7.3
+Santa Cruz,2012,6.2
+Santa Cruz,2013,8.1
+Santa Cruz,2014,10.5
+Santa Cruz,2015,9.4
+Santa Cruz,2016,5.9
+Santa Cruz,2017,4.2
+Santa Cruz,2018,4.3
+Santa Cruz,2019,4.3
+Santa Cruz,2020,3.4
+Santa Cruz,2021,6.8
+Santa Cruz,2022,82.2
+Santa Cruz,2023,83.1
+Santa Cruz,2024,22.7
+Santa Cruz,2025,18.5
+Formosa,2011,7.5
+Formosa,2012,8
+Formosa,2013,7.7
+Formosa,2014,8.1
+Formosa,2015,7.8
+Formosa,2016,8.3
+Formosa,2017,8.4
+Formosa,2018,8.1
+Formosa,2019,8.2
+Formosa,2020,7.8
+Formosa,2021,8
+Formosa,2022,8.4
+Formosa,2023,9.9
+Formosa,2024,9.6
+Formosa,2025,11.7
+Catamarca,2011,9.3
+Catamarca,2012,13
+Catamarca,2015,15.5
+Catamarca,2016,16.3
+Catamarca,2017,15.3
+Catamarca,2018,16
+Catamarca,2019,16.5
+Catamarca,2020,16.5
+Catamarca,2021,16.9
+Catamarca,2022,15.5
+Catamarca,2023,38.4
+Catamarca,2024,40.7
+Catamarca,2025,43.6
+San Luis,2011,4.8
+San Luis,2012,4
+San Luis,2013,4
+San Luis,2014,6.4
+San Luis,2015,7.3
+San Luis,2016,6.3
+San Luis,2017,5.3
+San Luis,2018,5.3
+La Pampa,2011,16.2
+La Pampa,2012,15.4
+La Pampa,2013,16.7
+La Pampa,2014,17.4
+La Pampa,2015,19.2
+La Pampa,2016,18.7
+La Pampa,2017,18.9
+La Pampa,2018,18.7
+La Pampa,2025,30.1
+Río Negro,2011,20
+Río Negro,2012,20.8
+Río Negro,2013,34
+Río Negro,2014,34.6
+Río Negro,2015,37.7
+Río Negro,2016,37.3
+Río Negro,2017,33.2
+Río Negro,2018,33.9
+Río Negro,2019,33.7
+Río Negro,2020,35.2
+Río Negro,2021,33.8
+Río Negro,2022,34.5
+Río Negro,2023,34.3
+Río Negro,2024,33.9
+Río Negro,2025,34.7
+San Juan,2011,9.5
+San Juan,2012,10.3
+San Juan,2013,12.2
+San Juan,2014,14.3
+San Juan,2015,15.6
+San Juan,2016,15.6
+San Juan,2017,15.5
+San Juan,2018,14.3
+San Juan,2019,14.1
+San Juan,2020,14.2
+San Juan,2021,14.3
+San Juan,2022,14.5
+San Juan,2023,20.2
+San Juan,2024,37.5
+San Juan,2025,37.5
+Tierra del Fuego,2011,37
+Tierra del Fuego,2012,47
+Tierra del Fuego,2013,34.6
+Tierra del Fuego,2014,35.3
+Tierra del Fuego,2015,44.7
+Tierra del Fuego,2016,50.6
+Tierra del Fuego,2017,49.4
+Tierra del Fuego,2018,54
+Tierra del Fuego,2019,52.2
+Tierra del Fuego,2020,50
+Tierra del Fuego,2021,21.7
+Tierra del Fuego,2022,43.6
+Tierra del Fuego,2023,12.8
+Tierra del Fuego,2024,12.8
+Tierra del Fuego,2025,12.8

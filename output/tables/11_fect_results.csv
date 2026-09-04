@@ -1,0 +1,5 @@
+estimator,subject,att,se,p,n_units
+FEct (FE imputation),language,-0.0342,0.0069,0,19990
+FEct (FE imputation),mathematics,-0.0547,0.0088,0,19959
+FEct (interactive FE),language,-0.0227,0.0081,0.0053,19990
+FEct (interactive FE),mathematics,-0.0516,0.0106,0,19959

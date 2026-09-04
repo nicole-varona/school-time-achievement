@@ -1,0 +1,79 @@
+definition,design,subject,sample,parameter,estimate,se,switchers
+main,five censuses,language,all schools,ATE,-0.021,0.0094,
+main,five censuses,language,all schools,Effect_1,-0.0272,0.009,5506
+main,five censuses,language,all schools,Effect_2,-0.0069,0.0101,4157
+main,five censuses,language,all schools,Placebo_1,-0.0071,0.0102,4146
+main,five censuses,language,all schools,Placebo_2,0.0366,0.0152,2378
+main,five censuses,language,excluding the 2023 cohort,ATE,0.0066,0.0117,
+main,five censuses,language,excluding the 2023 cohort,Effect_1,7e-04,0.0106,2980
+main,five censuses,language,excluding the 2023 cohort,Effect_2,0.0135,0.0134,1858
+main,five censuses,language,excluding the 2023 cohort,Placebo_1,0.0223,0.0131,1887
+main,five censuses,language,excluding the 2023 cohort,Placebo_2,0.0414,0.0297,384
+main,five censuses,language,excluding the 2024 cohort,ATE,-0.0234,0.0096,
+main,five censuses,language,excluding the 2024 cohort,Effect_1,-0.0309,0.0093,5199
+main,five censuses,language,excluding the 2024 cohort,Effect_2,-0.0074,0.0101,4157
+main,five censuses,language,excluding the 2024 cohort,Placebo_1,-0.0126,0.0106,3868
+main,five censuses,language,excluding the 2024 cohort,Placebo_2,0.036,0.0152,2378
+main,five censuses,mathematics,all schools,ATE,-0.0633,0.0115,
+main,five censuses,mathematics,all schools,Effect_1,-0.0532,0.0108,5466
+main,five censuses,mathematics,all schools,Effect_2,-0.0587,0.0127,4142
+main,five censuses,mathematics,all schools,Placebo_1,-0.025,0.0129,4113
+main,five censuses,mathematics,all schools,Placebo_2,0.0214,0.0177,2367
+main,five censuses,mathematics,excluding the 2023 cohort,ATE,0.0037,0.0145,
+main,five censuses,mathematics,excluding the 2023 cohort,Effect_1,-8e-04,0.0131,2971
+main,five censuses,mathematics,excluding the 2023 cohort,Effect_2,0.0096,0.0169,1855
+main,five censuses,mathematics,excluding the 2023 cohort,Placebo_1,0.0059,0.016,1882
+main,five censuses,mathematics,excluding the 2023 cohort,Placebo_2,-0.0109,0.0359,384
+main,five censuses,mathematics,excluding the 2024 cohort,ATE,-0.0671,0.0118,
+main,five censuses,mathematics,excluding the 2024 cohort,Effect_1,-0.0582,0.0111,5160
+main,five censuses,mathematics,excluding the 2024 cohort,Effect_2,-0.0593,0.0127,4142
+main,five censuses,mathematics,excluding the 2024 cohort,Placebo_1,-0.0365,0.0134,3836
+main,five censuses,mathematics,excluding the 2024 cohort,Placebo_2,0.0208,0.0177,2367
+main,six waves,language,all schools,ATE,0.0147,0.0114,
+main,six waves,language,all schools,Effect_1,0.0033,0.0106,3064
+main,six waves,language,all schools,Effect_2,0.033,0.0149,1495
+main,six waves,language,all schools,Placebo_1,0.016,0.0163,1258
+main,six waves,language,all schools,Placebo_2,-3e-04,0.0247,467
+main,six waves,language,excluding the 2023 cohort,ATE,0.0193,0.0123,
+main,six waves,language,excluding the 2023 cohort,Effect_1,0.0109,0.0112,2692
+main,six waves,language,excluding the 2023 cohort,Effect_2,0.0321,0.0173,1156
+main,six waves,language,excluding the 2023 cohort,Placebo_1,0.0317,0.0186,920
+main,six waves,language,excluding the 2023 cohort,Placebo_2,-0.0153,0.0343,150
+main,six waves,language,excluding the 2024 cohort,ATE,0.0143,0.0119,
+main,six waves,language,excluding the 2024 cohort,Effect_1,0.001,0.011,2757
+main,six waves,language,excluding the 2024 cohort,Effect_2,0.0339,0.0149,1495
+main,six waves,language,excluding the 2024 cohort,Placebo_1,0.0111,0.0166,1209
+main,six waves,language,excluding the 2024 cohort,Placebo_2,1e-04,0.0247,467
+main,six waves,mathematics,all schools,ATE,0.0277,0.0139,
+main,six waves,mathematics,all schools,Effect_1,0.0118,0.0129,3052
+main,six waves,mathematics,all schools,Effect_2,0.0508,0.0187,1490
+main,six waves,mathematics,all schools,Placebo_1,0.0227,0.0193,1251
+main,six waves,mathematics,all schools,Placebo_2,0.0634,0.0313,466
+main,six waves,mathematics,excluding the 2023 cohort,ATE,0.0302,0.015,
+main,six waves,mathematics,excluding the 2023 cohort,Effect_1,0.0133,0.0138,2684
+main,six waves,mathematics,excluding the 2023 cohort,Effect_2,0.0588,0.0213,1153
+main,six waves,mathematics,excluding the 2023 cohort,Placebo_1,0.0058,0.022,918
+main,six waves,mathematics,excluding the 2023 cohort,Placebo_2,0.0467,0.0403,150
+main,six waves,mathematics,excluding the 2024 cohort,ATE,0.0306,0.0146,
+main,six waves,mathematics,excluding the 2024 cohort,Effect_1,0.0133,0.0133,2746
+main,six waves,mathematics,excluding the 2024 cohort,Effect_2,0.0519,0.0187,1490
+main,six waves,mathematics,excluding the 2024 cohort,Placebo_1,0.022,0.0197,1203
+main,six waves,mathematics,excluding the 2024 cohort,Placebo_2,0.0632,0.0313,466
+main,three censuses,language,all schools,ATE,-0.0375,0.0103,
+main,three censuses,language,all schools,Effect_1,-0.0415,0.0101,4483
+main,three censuses,language,all schools,Effect_2,-0.0228,0.0117,3124
+main,three censuses,language,excluding the 2023 cohort,ATE,-0.0207,0.0125,
+main,three censuses,language,excluding the 2023 cohort,Effect_1,-0.0171,0.0119,1939
+main,three censuses,language,excluding the 2023 cohort,Effect_2,-0.0222,0.0164,825
+main,three censuses,language,excluding the 2024 cohort,ATE,-0.0414,0.0107,
+main,three censuses,language,excluding the 2024 cohort,Effect_1,-0.0473,0.0104,4176
+main,three censuses,language,excluding the 2024 cohort,Effect_2,-0.0236,0.0117,3124
+main,three censuses,mathematics,all schools,ATE,-0.0984,0.0126,
+main,three censuses,mathematics,all schools,Effect_1,-0.0754,0.012,4447
+main,three censuses,mathematics,all schools,Effect_2,-0.1078,0.0147,3112
+main,three censuses,mathematics,excluding the 2023 cohort,ATE,-0.0472,0.015,
+main,three censuses,mathematics,excluding the 2023 cohort,Effect_1,-0.0238,0.0144,1934
+main,three censuses,mathematics,excluding the 2023 cohort,Effect_2,-0.0863,0.0203,825
+main,three censuses,mathematics,excluding the 2024 cohort,ATE,-0.105,0.0129,
+main,three censuses,mathematics,excluding the 2024 cohort,Effect_1,-0.0835,0.0123,4141
+main,three censuses,mathematics,excluding the 2024 cohort,Effect_2,-0.1085,0.0147,3112

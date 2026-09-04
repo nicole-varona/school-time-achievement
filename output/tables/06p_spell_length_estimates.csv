@@ -1,0 +1,133 @@
+design,first_spell,subject,spec,parameter,estimate,se,switchers
+five censuses,1 year,language,1 horizon,ATE,-0.0399,0.0124,
+five censuses,1 year,language,1 horizon,Effect_1,-0.0399,0.0124,2286
+five censuses,1 year,language,1 horizon,Placebo_1,-0.0124,0.0136,1885
+five censuses,1 year,language,2 horizons,ATE,-0.0399,0.0134,
+five censuses,1 year,language,2 horizons,Effect_1,-0.0399,0.0124,2286
+five censuses,1 year,language,2 horizons,Effect_2,-0.0263,0.0144,1642
+five censuses,1 year,language,2 horizons,Placebo_1,-0.0124,0.0136,1885
+five censuses,1 year,language,2 horizons,Placebo_2,0.0068,0.0184,1148
+five censuses,1 year,mathematics,1 horizon,ATE,-0.0601,0.0148,
+five censuses,1 year,mathematics,1 horizon,Effect_1,-0.0601,0.0148,2271
+five censuses,1 year,mathematics,1 horizon,Placebo_1,-0.0439,0.017,1873
+five censuses,1 year,mathematics,2 horizons,ATE,-0.0846,0.0164,
+five censuses,1 year,mathematics,2 horizons,Effect_1,-0.0601,0.0148,2271
+five censuses,1 year,mathematics,2 horizons,Effect_2,-0.0897,0.018,1638
+five censuses,1 year,mathematics,2 horizons,Placebo_1,-0.0439,0.017,1873
+five censuses,1 year,mathematics,2 horizons,Placebo_2,0.0101,0.0213,1146
+five censuses,2 years,language,1 horizon,ATE,0.011,0.0217,
+five censuses,2 years,language,1 horizon,Effect_1,0.011,0.0217,779
+five censuses,2 years,language,1 horizon,Placebo_1,0.0298,0.0261,555
+five censuses,2 years,language,2 horizons,ATE,0.022,0.0259,
+five censuses,2 years,language,2 horizons,Effect_1,0.011,0.0217,779
+five censuses,2 years,language,2 horizons,Effect_2,0.0285,0.0263,419
+five censuses,2 years,language,2 horizons,Placebo_1,0.0298,0.0261,555
+five censuses,2 years,language,2 horizons,Placebo_2,-0.0143,0.0402,184
+five censuses,2 years,mathematics,1 horizon,ATE,-0.017,0.0269,
+five censuses,2 years,mathematics,1 horizon,Effect_1,-0.017,0.0269,777
+five censuses,2 years,mathematics,1 horizon,Placebo_1,0.0149,0.0302,553
+five censuses,2 years,mathematics,2 horizons,ATE,-0.0191,0.0315,
+five censuses,2 years,mathematics,2 horizons,Effect_1,-0.017,0.0269,777
+five censuses,2 years,mathematics,2 horizons,Effect_2,-0.0109,0.0322,419
+five censuses,2 years,mathematics,2 horizons,Placebo_1,0.0149,0.0302,553
+five censuses,2 years,mathematics,2 horizons,Placebo_2,-0.0712,0.049,184
+five censuses,3 or more years,language,1 horizon,ATE,-0.032,0.0143,
+five censuses,3 or more years,language,1 horizon,Effect_1,-0.032,0.0143,2441
+five censuses,3 or more years,language,1 horizon,Placebo_1,-0.0146,0.0167,1706
+five censuses,3 or more years,language,2 horizons,ATE,-0.0185,0.0137,
+five censuses,3 or more years,language,2 horizons,Effect_1,-0.032,0.0143,2441
+five censuses,3 or more years,language,2 horizons,Effect_2,3e-04,0.0146,2096
+five censuses,3 or more years,language,2 horizons,Placebo_1,-0.0146,0.0167,1706
+five censuses,3 or more years,language,2 horizons,Placebo_2,0.0784,0.0251,1046
+five censuses,3 or more years,mathematics,1 horizon,ATE,-0.0637,0.0171,
+five censuses,3 or more years,mathematics,1 horizon,Effect_1,-0.0637,0.0171,2418
+five censuses,3 or more years,mathematics,1 horizon,Placebo_1,-0.0169,0.0216,1687
+five censuses,3 or more years,mathematics,2 horizons,ATE,-0.0597,0.0167,
+five censuses,3 or more years,mathematics,2 horizons,Effect_1,-0.0637,0.0171,2418
+five censuses,3 or more years,mathematics,2 horizons,Effect_2,-0.0452,0.0185,2085
+five censuses,3 or more years,mathematics,2 horizons,Placebo_1,-0.0169,0.0216,1687
+five censuses,3 or more years,mathematics,2 horizons,Placebo_2,0.0503,0.0293,1037
+six waves,1 year,language,1 horizon,ATE,-0.0166,0.0154,
+six waves,1 year,language,1 horizon,Effect_1,-0.0166,0.0154,1121
+six waves,1 year,language,1 horizon,Placebo_1,-0.0118,0.0238,427
+six waves,1 year,language,2 horizons,ATE,-0.0149,0.0176,
+six waves,1 year,language,2 horizons,Effect_1,-0.0166,0.0154,1121
+six waves,1 year,language,2 horizons,Effect_2,-0.0038,0.0259,458
+six waves,1 year,language,2 horizons,Placebo_1,-0.0118,0.0238,427
+six waves,1 year,language,2 horizons,Placebo_2,0.012,0.0326,189
+six waves,1 year,mathematics,1 horizon,ATE,0.0239,0.0176,
+six waves,1 year,mathematics,1 horizon,Effect_1,0.0239,0.0176,1118
+six waves,1 year,mathematics,1 horizon,Placebo_1,0.0034,0.026,425
+six waves,1 year,mathematics,2 horizons,ATE,0.026,0.0199,
+six waves,1 year,mathematics,2 horizons,Effect_1,0.0239,0.0176,1118
+six waves,1 year,mathematics,2 horizons,Effect_2,0.0194,0.0305,457
+six waves,1 year,mathematics,2 horizons,Placebo_1,0.0034,0.026,425
+six waves,1 year,mathematics,2 horizons,Placebo_2,-0.0207,0.0435,189
+six waves,2 years,language,1 horizon,ATE,0.0449,0.023,
+six waves,2 years,language,1 horizon,Effect_1,0.0449,0.023,633
+six waves,2 years,language,1 horizon,Placebo_1,0.0803,0.0366,193
+six waves,2 years,language,2 horizons,ATE,0.0553,0.0239,
+six waves,2 years,language,2 horizons,Effect_1,0.0449,0.023,633
+six waves,2 years,language,2 horizons,Effect_2,0.0589,0.0299,250
+six waves,2 years,language,2 horizons,Placebo_1,0.0803,0.0366,193
+six waves,2 years,language,2 horizons,Placebo_2,-0.0537,0.0407,80
+six waves,2 years,mathematics,1 horizon,ATE,0.0211,0.0295,
+six waves,2 years,mathematics,1 horizon,Effect_1,0.0211,0.0295,631
+six waves,2 years,mathematics,1 horizon,Placebo_1,-2e-04,0.0407,191
+six waves,2 years,mathematics,2 horizons,ATE,0.0328,0.03,
+six waves,2 years,mathematics,2 horizons,Effect_1,0.0211,0.0295,631
+six waves,2 years,mathematics,2 horizons,Effect_2,0.0487,0.0367,250
+six waves,2 years,mathematics,2 horizons,Placebo_1,-2e-04,0.0407,191
+six waves,2 years,mathematics,2 horizons,Placebo_2,-0.0445,0.0483,80
+six waves,3 or more years,language,1 horizon,ATE,-0.0039,0.0171,
+six waves,3 or more years,language,1 horizon,Effect_1,-0.0039,0.0171,1310
+six waves,3 or more years,language,1 horizon,Placebo_1,0.0193,0.0248,638
+six waves,3 or more years,language,2 horizons,ATE,0.0155,0.0173,
+six waves,3 or more years,language,2 horizons,Effect_1,-0.0039,0.0171,1310
+six waves,3 or more years,language,2 horizons,Effect_2,0.0441,0.0207,787
+six waves,3 or more years,language,2 horizons,Placebo_1,0.0193,0.0248,638
+six waves,3 or more years,language,2 horizons,Placebo_2,0.01,0.0445,198
+six waves,3 or more years,mathematics,1 horizon,ATE,-0.0066,0.0211,
+six waves,3 or more years,mathematics,1 horizon,Effect_1,-0.0066,0.0211,1303
+six waves,3 or more years,mathematics,1 horizon,Placebo_1,0.0482,0.0307,635
+six waves,3 or more years,mathematics,2 horizons,ATE,0.0229,0.0218,
+six waves,3 or more years,mathematics,2 horizons,Effect_1,-0.0066,0.0211,1303
+six waves,3 or more years,mathematics,2 horizons,Effect_2,0.0663,0.027,783
+six waves,3 or more years,mathematics,2 horizons,Placebo_1,0.0482,0.0307,635
+six waves,3 or more years,mathematics,2 horizons,Placebo_2,0.1887,0.0548,197
+three censuses,1 year,language,1 horizon,ATE,-0.0373,0.013,
+three censuses,1 year,language,1 horizon,Effect_1,-0.0373,0.013,2064
+three censuses,1 year,language,1 horizon,Placebo_1,0.0255,0.0208,536
+three censuses,1 year,language,2 horizons,ATE,-0.0399,0.0138,
+three censuses,1 year,language,2 horizons,Effect_1,-0.0373,0.013,2064
+three censuses,1 year,language,2 horizons,Effect_2,-0.0308,0.015,1392
+three censuses,1 year,mathematics,1 horizon,ATE,-0.0719,0.0156,
+three censuses,1 year,mathematics,1 horizon,Effect_1,-0.0719,0.0156,2050
+three censuses,1 year,mathematics,1 horizon,Placebo_1,0.0294,0.0258,535
+three censuses,1 year,mathematics,2 horizons,ATE,-0.1087,0.0172,
+three censuses,1 year,mathematics,2 horizons,Effect_1,-0.0719,0.0156,2050
+three censuses,1 year,mathematics,2 horizons,Effect_2,-0.128,0.0193,1389
+three censuses,2 years,language,1 horizon,ATE,-0.0137,0.0242,
+three censuses,2 years,language,1 horizon,Effect_1,-0.0137,0.0242,646
+three censuses,2 years,language,1 horizon,Placebo_1,0.0541,0.0349,309
+three censuses,2 years,language,2 horizons,ATE,-0.0182,0.0281,
+three censuses,2 years,language,2 horizons,Effect_1,-0.0137,0.0242,646
+three censuses,2 years,language,2 horizons,Effect_2,-0.0173,0.0323,276
+three censuses,2 years,mathematics,1 horizon,ATE,-0.0281,0.0283,
+three censuses,2 years,mathematics,1 horizon,Effect_1,-0.0281,0.0283,645
+three censuses,2 years,mathematics,1 horizon,Placebo_1,0.1144,0.042,308
+three censuses,2 years,mathematics,2 horizons,ATE,-0.0528,0.0316,
+three censuses,2 years,mathematics,2 horizons,Effect_1,-0.0281,0.0283,645
+three censuses,2 years,mathematics,2 horizons,Effect_2,-0.0771,0.0366,276
+three censuses,3 or more years,language,1 horizon,ATE,-0.0602,0.0171,
+three censuses,3 or more years,language,1 horizon,Effect_1,-0.0602,0.0171,1773
+three censuses,3 or more years,language,1 horizon,Placebo_1,-0.0205,0.0406,160
+three censuses,3 or more years,language,2 horizons,ATE,-0.0419,0.0159,
+three censuses,3 or more years,language,2 horizons,Effect_1,-0.0602,0.0171,1773
+three censuses,3 or more years,language,2 horizons,Effect_2,-0.0162,0.0181,1456
+three censuses,3 or more years,mathematics,1 horizon,ATE,-0.1032,0.0202,
+three censuses,3 or more years,mathematics,1 horizon,Effect_1,-0.1032,0.0202,1752
+three censuses,3 or more years,mathematics,1 horizon,Placebo_1,-0.0674,0.0532,159
+three censuses,3 or more years,mathematics,2 horizons,ATE,-0.1029,0.0191,
+three censuses,3 or more years,mathematics,2 horizons,Effect_1,-0.1032,0.0202,1752
+three censuses,3 or more years,mathematics,2 horizons,Effect_2,-0.0942,0.0225,1447

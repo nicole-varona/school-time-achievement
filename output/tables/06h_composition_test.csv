@@ -1,0 +1,9 @@
+spec,group,estimate,se,t,sd_between_schools
+no wave-pair FE,just adopts,0.0619,0.0051,12.13,0.3038
+no wave-pair FE,just exits,-7e-04,0.0054,-0.13,0.3038
+no wave-pair FE,re-adopts,0.0234,0.0085,2.76,0.3038
+no wave-pair FE,still treated,0.0119,0.0018,6.46,0.3038
+wave-pair FE,just adopts,0.0098,0.005,1.95,0.3038
+wave-pair FE,just exits,0.0042,0.0053,0.81,0.3038
+wave-pair FE,re-adopts,-0.0077,0.0083,-0.93,0.3038
+wave-pair FE,still treated,0.0082,0.0018,4.61,0.3038

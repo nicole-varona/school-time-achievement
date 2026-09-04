@@ -1,0 +1,7 @@
+sample,horizon,estimate,switchers
+full,Effect_1,0.0033,3064
+full,Effect_2,0.033,1495
+full,Effect_3,-0.0066,837
+excl. 2023 cohort,Effect_1,0.0109,2692
+excl. 2023 cohort,Effect_2,0.0321,1156
+excl. 2023 cohort,Effect_3,-0.0075,837

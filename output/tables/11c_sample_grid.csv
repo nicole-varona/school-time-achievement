@@ -1,0 +1,7 @@
+sample,subject,n_schools,fect_att,fect_se,pretrend_f_p
+full,language,22935,-0.0342,0.0069,0.0012
+full,mathematics,22935,-0.0547,0.0088,3.7e-05
+non-reverting (CDH),language,17979,-0.0449,0.012,0.00048
+non-reverting (CDH),mathematics,17979,-0.0773,0.0152,0.000287
+excl. 2023 cohort,language,19240,-0.0123,0.0087,0.374
+excl. 2023 cohort,mathematics,19240,-0.0115,0.0107,0.0565

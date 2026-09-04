@@ -1,0 +1,21 @@
+estimator,regime,subject,placebo,att,se
+CDH (headline),combined,language,Placebo_1,0.0160442203148764,0.0162769474736785
+CDH (headline),combined,language,Placebo_2,-0.000250681397828118,0.0247493160094166
+CDH (headline),combined,mathematics,Placebo_1,0.022721161301572,0.0192730153861426
+CDH (headline),combined,mathematics,Placebo_2,0.0634342804668836,0.0313419941277042
+CDH (headline),full-day,language,Placebo_1,0.0406548407094249,0.0338660687393449
+CDH (headline),full-day,language,Placebo_2,-0.0292431234184481,0.0665379722075699
+CDH (headline),full-day,mathematics,Placebo_1,0.104556284940018,0.0377543707730583
+CDH (headline),full-day,mathematics,Placebo_2,0.0874797035122788,0.0748357613076382
+CDH (enrol-weighted),combined,language,Placebo_1,-0.00477952563258384,0.0106070028659471
+CDH (enrol-weighted),combined,language,Placebo_2,-0.00585285064062574,0.0159370232261045
+CDH (enrol-weighted),combined,mathematics,Placebo_1,0.0134493765872512,0.012154326074376
+CDH (enrol-weighted),combined,mathematics,Placebo_2,0.0108490337187178,0.0199855526655914
+CDH (grade-6-weighted),combined,language,Placebo_1,-0.00278260043046534,0.0108307237336081
+CDH (grade-6-weighted),combined,language,Placebo_2,-0.000897870968580558,0.0158519114456081
+CDH (grade-6-weighted),combined,mathematics,Placebo_1,0.0137285416409545,0.0122236867935678
+CDH (grade-6-weighted),combined,mathematics,Placebo_2,0.0175412888481751,0.0199047881006633
+CDH (never-switchers),combined,language,Placebo_1,0.0170312219549852,0.0161550337821128
+CDH (never-switchers),combined,language,Placebo_2,-0.000160977573993012,0.0247518353927191
+CDH (never-switchers),combined,mathematics,Placebo_1,0.0228701959468413,0.0191122916883289
+CDH (never-switchers),combined,mathematics,Placebo_2,0.0636502033616706,0.0313447276591907

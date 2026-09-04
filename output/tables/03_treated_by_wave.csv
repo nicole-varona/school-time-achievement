@@ -1,0 +1,7 @@
+year,wave_type,schools_tested,treated_ext_or_full_ge50,pct_treated_ext_or_full_ge50,treated_fullday_ge50,pct_treated_fullday_ge50,treated_any_expansion,pct_treated_any_expansion
+2016,census,18531,3336,18,2085,11.3,4699,25.4
+2018,census,19568,3611,18.5,2213,11.3,4746,24.3
+2021,census,19546,3548,18.2,2158,11,4375,22.4
+2022,sample,3676,797,21.7,470,12.8,977,26.6
+2023,census,19191,6728,35.1,2642,13.8,7456,38.9
+2025,census,19185,7129,37.2,2912,15.2,7689,40.1

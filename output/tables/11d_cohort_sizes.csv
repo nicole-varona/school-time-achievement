@@ -1,0 +1,13 @@
+cohort_wave,sample,cohort_year,schools
+1,full,2016,3336
+2,full,2018,870
+3,full,2021,436
+4,full,2022,117
+5,full,2023,3219
+6,full,2025,1369
+1,excl. 2023 cohort,2016,3336
+2,excl. 2023 cohort,2018,870
+3,excl. 2023 cohort,2021,436
+4,excl. 2023 cohort,2022,117
+5,excl. 2023 cohort,2023,255
+6,excl. 2023 cohort,2025,1012

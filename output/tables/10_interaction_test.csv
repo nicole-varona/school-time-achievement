@@ -1,0 +1,9 @@
+subject,sample,diff,z,p,comparison
+language,full,0.0237,0.778,0.4363,Q1 vs Q4
+mathematics,full,0.0475,1.342,0.1795,Q1 vs Q4
+language,excl. 2023 cohort,0.0394,1.177,0.2392,Q1 vs Q4
+mathematics,excl. 2023 cohort,0.0531,1.365,0.1723,Q1 vs Q4
+language,full,0.0303,0.91,0.3629,T1 vs T3 (SES tercile)
+mathematics,full,0.038,0.922,0.3568,T1 vs T3 (SES tercile)
+language,excl. 2023 cohort,0.0436,1.181,0.2375,T1 vs T3 (SES tercile)
+mathematics,excl. 2023 cohort,0.0785,1.697,0.0896,T1 vs T3 (SES tercile)

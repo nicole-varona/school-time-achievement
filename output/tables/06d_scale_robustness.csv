@@ -1,0 +1,5 @@
+outcome,scale,subject,att,se,k2,k2_sig
+ya_lang,anchored /100,Language,0.0147,0.0114,-3e-04,0
+ya_math,anchored /100,Mathematics,0.0277,0.0139,0.0634,1
+yz_lang,within-wave z,Language,0.0249,0.019,0.0452,0
+yz_math,within-wave z,Mathematics,0.044,0.0196,0.1379,1

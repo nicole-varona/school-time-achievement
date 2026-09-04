@@ -1,0 +1,17 @@
+dimension,group,n_schools,switchers_eff1
+context quartile,1,9503,1138
+context quartile,2,3824,656
+context quartile,3,3045,507
+context quartile,4,3019,527
+SES tercile,1,6649,767
+SES tercile,2,7189,1120
+SES tercile,3,5138,904
+region,Centro/Pampeana,11849,1895
+region,Cuyo,1618,346
+region,NEA,3771,189
+region,NOA,4024,389
+region,Patagonia,1084,206
+sector,private,3850,677
+sector,public,18457,2346
+area,rural,10006,1074
+area,urban,12301,1949

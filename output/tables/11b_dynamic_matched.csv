@@ -1,0 +1,27 @@
+subject,source,k,att,se
+language,FEct (FE imputation),-4,0.0177,0.0143
+language,FEct (FE imputation),-3,0.031,0.009
+language,FEct (FE imputation),-2,-0.0227,0.0081
+language,FEct (FE imputation),-1,-0.002,0.0098
+language,FEct (FE imputation),0,-0.0226,0.0092
+language,FEct (FE imputation),1,-0.0573,0.0132
+language,FEct (FE imputation),2,-0.0331,0.0173
+language,FEct (FE imputation),3,-0.0091,0.0462
+language,FEct (FE imputation),4,0.0153,0.0411
+language,FEct (FE imputation),5,-0.0522,0.0517
+mathematics,FEct (FE imputation),-4,0.0219,0.0157
+mathematics,FEct (FE imputation),-3,0.0229,0.0106
+mathematics,FEct (FE imputation),-2,-0.007,0.0106
+mathematics,FEct (FE imputation),-1,0.0036,0.012
+mathematics,FEct (FE imputation),0,-0.0469,0.0111
+mathematics,FEct (FE imputation),1,-0.0826,0.0165
+mathematics,FEct (FE imputation),2,-0.0915,0.0236
+mathematics,FEct (FE imputation),3,-0.0378,0.0613
+mathematics,FEct (FE imputation),4,0.0306,0.0514
+mathematics,FEct (FE imputation),5,-0.0517,0.0662
+language,CDH,0,0.0156,0.0172
+language,CDH,1,0.0651,0.0346
+language,CDH,2,-0.0355,0.0522
+mathematics,CDH,0,0.0488,0.0206
+mathematics,CDH,1,0.122,0.0461
+mathematics,CDH,2,-0.1045,0.0659

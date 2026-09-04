@@ -1,0 +1,9 @@
+outcome,spec,att_pp,se_pp,base_rate_pp
+nonpromotion,CDH full panel,0.0788,0.1004,1.6776
+nonpromotion,CDH drop 2020-21,0.029,0.1022,1.6776
+nonpromotion,CDH genuine only,0.1764,0.1176,1.6776
+nonpromotion,CS full (+covars),-0.4255,0.1992,1.6776
+dropout,CDH full panel,-0.0189,0.0621,0.4882
+dropout,CDH drop 2020-21,-0.0149,0.0648,0.4882
+dropout,CDH genuine only,-0.0148,0.0759,0.4882
+dropout,CS full (+covars),-0.0431,0.1071,0.4882

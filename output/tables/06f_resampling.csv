@@ -1,0 +1,11 @@
+estimator,subject,cluster_level,inference,att,se,p,ci_lo,ci_hi,ci_step,n_boot,t_ratio,dof_factor
+TWFE (benchmark),language,school,analytic cluster-robust,-0.0294,0.0063,0,,,,,,
+TWFE (benchmark),language,province,analytic cluster-robust,-0.0294,0.0099,0.0068,,,,,,
+TWFE (benchmark),language,province,wild cluster bootstrap,-0.0294,,0.0641,-0.0551,0.0042,0.002,999,1.0215,1.0215
+TWFE (benchmark),mathematics,school,analytic cluster-robust,-0.0503,0.0077,0,,,,,,
+TWFE (benchmark),mathematics,province,analytic cluster-robust,-0.0503,0.0182,0.0108,,,,,,
+TWFE (benchmark),mathematics,province,wild cluster bootstrap,-0.0503,,0.04,-0.1084,-0.0068,0.0036,999,1.0215,1.0215
+FEct (FE imputation),language,school,nonparametric cluster bootstrap,-0.0342,0.0069,0,-0.0477,-0.0207,,1000,,
+FEct (FE imputation),language,province,nonparametric cluster bootstrap,-0.0342,0.0145,0.0188,-0.0627,-0.0057,,1000,,
+FEct (FE imputation),mathematics,school,nonparametric cluster bootstrap,-0.0547,0.0088,0,-0.0719,-0.0375,,1000,,
+FEct (FE imputation),mathematics,province,nonparametric cluster bootstrap,-0.0547,0.0234,0.0193,-0.1005,-0.0089,,1000,,

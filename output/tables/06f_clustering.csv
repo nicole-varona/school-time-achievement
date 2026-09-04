@@ -1,0 +1,19 @@
+estimator,subject,cluster_level,att,se,se_eff1,se_eff2,se_placebo1
+CDH (primary),language,school,0.0147,0.0114,0.0106,0.0149,0.0163
+CS (robustness),language,school,0.0051,0.0276,,,
+TWFE (benchmark),language,school,-0.0294,0.0063,,,
+CDH (primary),language,province,0.0147,0.0074,0.0072,0.0116,0.0125
+CS (robustness),language,province,0.0051,0.0724,,,
+TWFE (benchmark),language,province,-0.0294,0.0099,,,
+CDH (primary),language,region,0.0147,0.0041,0.0076,0.0081,0.0164
+CS (robustness),language,region,0.0051,0.0334,,,
+TWFE (benchmark),language,region,-0.0294,0.0127,,,
+CDH (primary),mathematics,school,0.0277,0.0139,0.0129,0.0187,0.0193
+CS (robustness),mathematics,school,0.0486,0.0306,,,
+TWFE (benchmark),mathematics,school,-0.0503,0.0077,,,
+CDH (primary),mathematics,province,0.0277,0.0122,0.013,0.0173,0.0174
+CS (robustness),mathematics,province,0.0486,0.1002,,,
+TWFE (benchmark),mathematics,province,-0.0503,0.0182,,,
+CDH (primary),mathematics,region,0.0277,0.0116,0.0179,0.006,0.0204
+CS (robustness),mathematics,region,0.0486,0.0266,,,
+TWFE (benchmark),mathematics,region,-0.0503,0.0227,,,

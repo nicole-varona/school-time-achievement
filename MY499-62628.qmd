@@ -1,0 +1,1885 @@
+---
+# ============================================================================
+# MY499 dissertation | Candidate 62628
+# Renders to PDF. R chunks pull real tables/figures from output/.
+# ============================================================================
+format:
+  pdf:
+    pdf-engine: xelatex
+    documentclass: scrartcl
+    papersize: a4
+    geometry: [margin=1in]
+    number-sections: true
+    toc: false
+    colorlinks: true
+    fig-pos: 'H'
+    keep-tex: false
+    cite-method: citeproc
+    fontsize: 12pt
+    linestretch: 2
+    # Body, tables and figures are one typographic system: this font must match
+    # THESIS_FONT in scripts/90_style.R. Change both together or not at all.
+    # The OTFs ship with TinyTeX (tex-gyre, tex-gyre-math) and are copied to
+    # ~/Library/Fonts so that ragg renders the figures in the same family.
+    mainfont: "TeX Gyre Termes"
+    mathfont: "TeX Gyre Termes Math"
+    include-in-header:
+      text: |
+        % KOMA sets every heading, and every TOC entry, from `disposition`,
+        % which defaults to sans-serif. Overriding it is what keeps the contents
+        % page in the same family as the body.
+        \setkomafont{disposition}{\normalfont\bfseries}
+        % Section titles a touch larger; subheadings at body size. All bold,
+        % sentence case, no small caps.
+        \setkomafont{section}{\normalfont\large\bfseries}
+        \setkomafont{subsection}{\normalfont\normalsize\bfseries}
+        \setkomafont{subsubsection}{\normalfont\normalsize\bfseries\itshape}
+        % Quarto wraps a captioned table in its own float, so kableExtra's
+        % HOLD_position applies to the inner tabular and the outer float still
+        % drifts -- which put the framework table above the section heading that
+        % introduces it. Pinning the default placement fixes every table at once.
+        \usepackage{float}
+        \floatplacement{table}{H}
+        % [H] takes the table out of the float mechanism and places it in the
+        % text flow, where it inherits the document's double spacing and every
+        % table grows by a blank line per row. Real floats reset that; a pinned
+        % one has to be told.
+        \usepackage{etoolbox}
+        \AtBeginEnvironment{table}{\singlespacing}
+        \AtBeginEnvironment{longtable}{\singlespacing}
+        % Note under a figure, matching the "Notes:" block under the tables.
+        \newcommand{\fignote}[1]{\par\vspace{-0.4\baselineskip}\begingroup
+          \centering\begin{minipage}{0.92\linewidth}\footnotesize
+          \setstretch{1.0}\noindent\emph{Notes:} #1\par\end{minipage}\par
+          \endgroup\vspace{0.4\baselineskip}}
+        % Table and figure lists, set like the table of contents.
+        % Bare URLs set in the body face rather than typewriter, so the one
+        % link in the appendix does not import a second font family.
+        \AtBeginDocument{\urlstyle{same}}
+        \renewcommand{\listtablename}{List of Tables}
+        \renewcommand{\listfigurename}{List of Figures}
+bibliography: references.bib
+# Ley 26.075 appears only in the framework table, whose sources are plain text
+# because a kableExtra note is raw LaTeX that pandoc never resolves. Without this
+# it would drop out of the reference list.
+nocite: |
+  @ley26075_2005
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: false
+---
+
+```{=latex}
+\begin{titlepage}
+\centering
+\singlespacing
+\vspace*{1cm}
+\includegraphics[width=0.4\textwidth]{lse_logo.jpg}\par
+\vspace{1.8cm}
+{\Large\bfseries Extended School Time and Student Achievement\\[0.3cm]
+in Argentine Primary Education\par}
+\vspace{1.5cm}
+{\large MY499 Dissertation\par}
+{\large MSc Social Research Methods\par}
+{\large Department of Methodology\par}
+{\large London School of Economics and Political Science\par}
+\vspace{2cm}
+{\large Candidate number: 62628\par}\vspace{0.4cm}
+{\large Supervisor: Dr.~Zachary Dickson\par}\vspace{0.4cm}
+{\large 13 August 2026\par}
+\vfill
+\end{titlepage}
+\newpage
+```
+
+```{r setup}
+# The R session that knits this document may start in the C locale. When it does,
+# knitr writes every non-ASCII character into the LaTeX as a literal "<U+00F3>"
+# escape, so accented place names print as that string instead of as the letter.
+# The bytes and the Encoding() tag are already correct; what is missing is a
+# native encoding that can represent them. Set before anything is rendered.
+invisible(Sys.setlocale("LC_CTYPE", "en_US.UTF-8"))
+
+suppressPackageStartupMessages({
+  library(data.table); library(knitr); library(kableExtra)
+})
+knitr::opts_chunk$set(fig.align = "center", out.width = "92%", fig.pos = "H")
+# Paths anchored to the project root via here (matches the analysis scripts).
+TAB <- here::here("output", "tables"); FIG <- here::here("output", "figures")
+
+# Read a saved table; NULL if not yet produced.
+# fread returns character columns WITHOUT the UTF-8 encoding tag, so an accented
+# value read from a committed table reaches LaTeX as raw bytes and xelatex draws
+# two glyphs instead of one ("C<c3><b3>rdoba"). Tagging here fixes it once for
+# every table rather than escaping accents by hand in each one.
+read_out <- function(f) {
+  p <- file.path(TAB, f)
+  if (!file.exists(p)) return(NULL)
+  d <- fread(p, encoding = "UTF-8")
+  for (j in names(d)) if (is.character(d[[j]])) Encoding(d[[j]]) <- "UTF-8"
+  d[]
+}
+
+# Render a saved table as a booktabs PDF table (placeholder note if missing).
+# Appendix dumps are set at ONE declared size rather than scaled per table:
+# scale_down gives every wide table its own arbitrary font size, which breaks the
+# single-family typography the body and the figures share.
+# A variable name is not a column heading, and it is not a row label either. The
+# dumped tables used to carry the pipeline's own snake_case names into the PDF,
+# in the header AND in the first column, which reads as an unfinished output.
+# Renaming happens HERE so it applies to every dump at once and to any added
+# later. Escaping stays ON, so the labels are plain text: a header carrying LaTeX
+# would have to travel with escape = FALSE, and that turns every underscore
+# elsewhere in the table into a subscript.
+HEAD <- c(att = "ATT", se = "s.e.", p = "p-value", n = "N", n_obs = "N",
+          n_units = "Units", n_sch = "Schools", n_schools = "Schools",
+          ci_lo = "95% CI, lower", ci_hi = "95% CI, upper", k = "Lead/lag",
+          att_pp = "ATT (pp)", se_pp = "s.e. (pp)",
+          base_rate_pp = "Untreated mean (pp)", std_difference = "Std. difference",
+          ever_treated = "Ever treated", never_treated = "Never treated",
+          fect_att = "FEct ATT", fect_se = "FEct s.e.", pct_public = "State %",
+          pct_rural = "Rural %", log_enroll = "Log enrolment",
+          bl_ses = "Baseline SES", bl_score_lang = "Baseline language",
+          bl_score_math = "Baseline mathematics", pretrend_f_p = "Pre-trend p-value",
+          counterfactual_trend = "Counterfactual trend", n_units_used = "Units used")
+prettify <- function(x) vapply(as.character(x), function(v) {
+  if (is.na(v)) return(NA_character_)
+  if (v %in% names(HEAD)) return(unname(HEAD[v]))
+  if (!grepl("_", v)) return(v)                    # leave prose values alone
+  v <- gsub("_", " ", v)
+  v <- sub("^pct ", "", v)
+  sub("^(.)", "\\U\\1", v, perl = TRUE)
+}, character(1), USE.NAMES = FALSE)
+
+exhibit_tbl <- function(f, digits = 3, cols = NULL, dt = NULL, font_size = 9,
+                        note = NULL, src = NULL) {
+  d <- if (!is.null(dt)) dt else read_out(f)
+  if (is.null(d)) return(kbl(data.frame(Status = paste("exhibit pending:", f)),
+                             booktabs = TRUE, linesep = ""))
+  if (!is.null(cols)) d <- d[, ..cols]
+  d <- copy(d)
+  for (j in names(d)) if (is.character(d[[j]])) set(d, j = j, value = prettify(d[[j]]))
+  k <- kbl(d, booktabs = TRUE, digits = digits, linesep = "",
+           col.names = prettify(names(d))) |>
+    kable_styling(latex_options = "HOLD_position", font_size = font_size)
+  if (is.null(note) && is.null(src)) return(k)
+  tbl_note(k, if (is.null(note)) "" else note, src = src)
+}
+
+# Table note in the applied-micro convention: the word "Notes:" in italic, the
+# note one size below the body, spanning the table width. Every results table
+# declares estimator, treatment definition, comparison group, aggregation window
+# and clustering here rather than in the prose, because notes do not count
+# towards the word limit and the reader needs them beside the numbers.
+# Notes carry what the reader needs beside the numbers; Sources carry where the
+# non-estimated content came from. CITEKEYS CANNOT GO IN EITHER: this block is
+# raw LaTeX that pandoc never sees, so `@key` would print literally (and its
+# underscore starts math mode). Bibliographic sources belong in the caption,
+# which pandoc does process; `src` is for plain-text provenance. They are separate blocks because a caption
+# should name the table, not explain it, and a source is not a note.
+tbl_note <- function(x, ..., src = NULL) {
+  g <- paste0("\\\\emph{Notes:} ", paste0(..., collapse = ""))
+  if (!is.null(src)) g <- c(g, paste0("\\\\emph{Sources:} ", src))
+  footnote(x, general_title = "", threeparttable = TRUE, escape = FALSE, general = g)
+}
+
+# Guarded figure include (placeholder text if missing).
+exhibit_fig <- function(f) {
+  p <- file.path(FIG, f)
+  if (file.exists(p)) knitr::include_graphics(p)
+  else knitr::asis_output(sprintf("\\emph{[figure pending: %s]}", f))
+}
+
+# ---- Key figures pulled from saved outputs (computed at render time) --------
+.mr  <- read_out("01_match_rate_by_wave.csv")
+.iv  <- read_out("11d_identifying_variation.csv")
+.rev <- read_out("11_reversal_accounting.csv")
+.ext <- read_out("03_extended_day_by_year.csv")
+.ful <- read_out("03_full_day_by_year.csv")
+.tr  <- read_out("09_trajectory_results.csv")
+link_lo <- if (!is.null(.mr))  sprintf("%.1f", min(.mr$match_rate)) else "[n/a]"
+link_hi <- if (!is.null(.mr))  sprintf("%.1f", max(.mr$match_rate)) else "[n/a]"
+n_sch   <- if (!is.null(.iv))  format(.iv[metric == "schools"]$full,      big.mark = ",") else "[n/a]"
+n_sw    <- if (!is.null(.iv))  format(.iv[metric == "school_waves"]$full, big.mark = ",") else "[n/a]"
+rev_pct <- if (!is.null(.rev)) round(.rev[scope == "RA annual history (all schools)"]$pct_reverting) else "[n/a]"
+readopt_pct <- if (!is.null(.rev)) round(.rev[scope == "RA annual history (all schools)"]$pct_readopting) else "[n/a]"
+# Reversal read on either definition, and the size of any wave-dated cohort:
+# both are quantities Appendix A turns on.
+rv <- function(sc, col = "pct_reverting") if (!is.null(.rev))
+  sprintf("%.1f", .rev[scope == sc][[col]]) else "[n/a]"
+.csz <- read_out("11d_cohort_sizes.csv")
+csz <- function(y) if (!is.null(.csz))
+  fmtn(.csz[sample == "full" & cohort_year == y]$schools) else "[n/a]"
+
+# ---- Empirical strategy: event time, switching and inference ---------------
+.sw   <- read_out("03_switches_per_school.csv")
+.hz   <- read_out("11d_switchers_by_horizon.csv")
+.ecl  <- read_out("06j_exposure_classes.csv")
+.eval <- read_out("06l_exposure_validity.csv")
+.eff  <- read_out("06f_effective_clusters.csv")
+.lopo <- read_out("06k_leave_one_province.csv")
+.idg  <- read_out("06f_inference_diagnostics.csv")
+.rsm  <- read_out("06f_resampling.csv")
+
+fmtn <- function(x) format(x, big.mark = ",")
+# Assessment calendar, read off the wave table rather than hard-coded.
+n_waves  <- if (!is.null(.mr)) nrow(.mr) else "[n/a]"
+wave_yrs <- if (!is.null(.mr)) sort(.mr$year) else NULL
+wave_gaps <- if (!is.null(wave_yrs))
+  knitr::combine_words(as.character(diff(wave_yrs)), and = " and ") else "[n/a]"
+# Schools whose treatment switches two or more times: the design fact that rules
+# out an absorbing-adoption estimator.
+n_multi <- if (!is.null(.sw)) fmtn(.sw[switches >= 2, sum(schools)]) else "[n/a]"
+# Switchers supporting each horizon, in the wave-indexed specification.
+hz_n <- function(k) if (!is.null(.hz))
+  fmtn(.hz[sample == "full" & trimws(horizon) == paste0("Effect_", k)]$switchers) else "[n/a]"
+# Classes of calendar time since first adoption. 06j carries a `definition`
+# column with the single value "main" -- it reported two until the persistence
+# rule was retired -- so the filter below is kept rather than dropped.
+.ecs <- if (!is.null(.ecl)) .ecl[definition == "main"] else NULL
+exp_modal_pct <- if (!is.null(.ecs)) sprintf("%.0f", max(.ecs$pct)) else "[n/a]"
+exp_top3_pct  <- if (!is.null(.ecs)) sprintf("%.0f", .ecs[exposure <= 2, sum(pct)]) else "[n/a]"
+exp_max       <- if (!is.null(.ecs)) max(.ecs$exposure) else "[n/a]"
+# How far calendar time since first adoption departs from years actually treated.
+eval_pick <- function(h, e, col) if (!is.null(.eval))
+  sprintf("%.0f", .eval[horizon == h & years_since_adoption == e][[col]]) else "[n/a]"
+gap_h2_e1 <- eval_pick(2, 1, "pct_no_gap")
+# Effective clusters and the leverage check on provinces.
+eff_sw <- if (!is.null(.eff)) sprintf("%.1f", .eff[base == "switchers"]$effective_clusters) else "[n/a]"
+n_prov <- if (!is.null(.eff)) .eff[base == "switchers"]$n_clusters else "[n/a]"
+.lm <- if (!is.null(.lopo)) .lopo[subject == "mathematics" & dropped != "none (full sample)"] else NULL
+lopo_lo <- if (!is.null(.lm)) sprintf("%.3f", min(.lm$att)) else "[n/a]"
+lopo_hi <- if (!is.null(.lm)) sprintf("%.3f", max(.lm$att)) else "[n/a]"
+# Calendar span of a unit of event time: the waves are not equally spaced, which
+# is what makes a relative-magnitude bound uninterpretable on this event study.
+wave_gap_lo <- if (!is.null(wave_yrs)) min(diff(wave_yrs)) else "[n/a]"
+wave_gap_hi <- if (!is.null(wave_yrs)) max(diff(wave_yrs)) else "[n/a]"
+# Smallest eigenvalue of the primary estimator's joint effects-and-placebos
+# covariance matrix: negative, which is why no sensitivity method that needs a
+# valid covariance matrix is run on it.
+.ev <- if (!is.null(.idg)) .idg[diagnostic %like% "^vcov" & quantity %like% "^eigenvalue"] else NULL
+min_eig <- if (!is.null(.ev)) sprintf("%.4f", min(as.numeric(.ev$value))) else "[n/a]"
+# Province-clustered resampling inference, for the estimators that admit it.
+rs <- function(est, subj, inf, col = "p", lv = "province") if (!is.null(.rsm))
+  sprintf("%.3f", .rsm[estimator %like% est & subject == subj & cluster_level == lv &
+                       inference %like% inf][[col]]) else "[n/a]"
+# The primary estimator under each inference procedure. `cb` gives the standard
+# error, `cbt` the ratio the SAME point estimate carries under that procedure —
+# the quantity that moves, since the estimate itself does not.
+.cdb <- read_out("06q_cdh_bootstrap.csv")
+cb <- function(s, par, col = "se_boot_package") if (!is.null(.cdb))
+  sprintf("%.3f", .cdb[subject == s & parameter == par][[col]]) else "[n/a]"
+cbt <- function(s, par, col = "se_boot_package") if (!is.null(.cdb)) {
+  r <- .cdb[subject == s & parameter == par]
+  sprintf("%.2f", r$att / r[[col]]) } else "[n/a]"
+# How general the province shrinkage is, counted rather than asserted: it is NOT
+# every cell, and the exception matters enough that the count is read from the
+# file instead of being described in words that could go stale.
+shrink_n  <- if (!is.null(.cdb)) .cdb[se_province < se_school, .N] else "[n/a]"
+shrink_of <- if (!is.null(.cdb)) nrow(.cdb) else "[n/a]"
+
+# Share of primary schools in each regime, by year (Context).
+pct <- function(d, y, col) if (!is.null(d)) sprintf("%.1f", d[year == y][[col]]) else "[n/a]"
+# Same series, as a count rather than a share: how many primary schools clear the
+# treatment threshold in a given year.
+cnt <- function(d, y, col) if (!is.null(d)) fmtn(d[year == y][[col]]) else "[n/a]"
+ext_11 <- pct(.ext, 2011, "has_regime_pct"); ful_11 <- pct(.ful, 2011, "has_regime_pct")
+ext_22 <- pct(.ext, 2022, "has_regime_pct"); ext_23 <- pct(.ext, 2023, "has_regime_pct")
+ext_25 <- pct(.ext, 2025, "has_regime_pct"); ful_22 <- pct(.ful, 2022, "has_regime_pct")
+ful_23 <- pct(.ful, 2023, "has_regime_pct"); ful_25 <- pct(.ful, 2025, "has_regime_pct")
+ext100_22 <- pct(.ext, 2022, "share_eq_100_pct"); ext100_23 <- pct(.ext, 2023, "share_eq_100_pct")
+# State-managed share among ever- and never-treated schools: the federal
+# federal programme is offered only to this sector, so the composition
+# of the two groups by management is a scope condition rather than a covariate.
+.bal <- read_out("03_baseline_balance.csv")
+pub <- function(col) if (!is.null(.bal))
+  sprintf("%.0f", 100 * .bal[variable == "pct_public"][[col]]) else "[n/a]"
+
+# Assessment coverage: Aprender reaches ~2/3 of primary schools, and the ones it
+# misses are much smaller and far less often treated (Data, sources and linkage).
+.cov <- read_out("03_assessment_coverage.csv")
+cv <- function(m) if (!is.null(.cov)) .cov[metric == m]$value else NA_real_
+cov_pct  <- if (!is.null(.cov)) sprintf("%.0f", 100 * cv("schools with at least one Aprender score") /
+                                          cv("primary schools in the RA census (ever)")) else "[n/a]"
+n_prim   <- if (!is.null(.cov)) format(cv("primary schools in the RA census (ever)"), big.mark = ",") else "[n/a]"
+med_in   <- if (!is.null(.cov)) cv("median primary enrolment, assessed")     else "[n/a]"
+med_out  <- if (!is.null(.cov)) cv("median primary enrolment, not assessed") else "[n/a]"
+trt_in   <- if (!is.null(.cov)) cv("% treated (share >= 50%), assessed")     else "[n/a]"
+trt_out  <- if (!is.null(.cov)) cv("% treated (share >= 50%), not assessed") else "[n/a]"
+bal_pct  <- if (!is.null(.cov)) cv("% of estimation-panel schools present in all six waves") else "[n/a]"
+bal5_pct <- if (!is.null(.cov)) cv("% of estimation-panel schools present in all five census waves") else "[n/a]"
+# Schools assessed in the 2022 sample wave, against a census wave, from the match
+# table: the contrast is what makes the six-wave figure a design fact.
+n22   <- if (!is.null(.mr)) fmtn(.mr[year == 2022]$schools) else "[n/a]"
+ncens <- if (!is.null(.mr)) fmtn(round(mean(.mr[wave_type == "census"]$schools), -2)) else "[n/a]"
+
+# ---- Results: the rollout, the measurement correction, the estimates --------
+.coh  <- read_out("03_adoption_cohorts.csv")
+.tt   <- read_out("03_treatment_transitions.csv")
+.rh   <- read_out("08b_recording_by_hours.csv")
+.rp   <- read_out("08b_recording_by_province.csv")
+.fhm  <- read_out("08b_five_hour_margin.csv")
+.hbs  <- read_out("08b_hours_by_sector.csv")
+# Reported hours by management sector: the two sectors run under different rules
+# and the federal programme reaches only one of them.
+hbs <- function(y, sec, col = "mean_hours") if (!is.null(.hbs))
+  sprintf(if (col == "mean_hours") "%.2f" else "%.1f",
+          .hbs[year == y & sector == sec][[col]]) else "[n/a]"
+.lrl  <- read_out("08b_labelling_rule.csv")
+# What the school-level labelling rule does to the arms. Not to the shares: those
+# are computed from each wave's own reported hours.
+lr <- function(q) if (!is.null(.lrl))
+  format(.lrl[quantity == q]$value, big.mark = ",") else "[n/a]"
+.cont <- read_out("08_contamination_2023.csv")
+.arm  <- read_out("08_arm_results.csv")
+.hs   <- read_out("06g_horizon_sensitivity.csv")
+.mp   <- read_out("06g_max_placebos.csv")
+.opt  <- read_out("06g_cdh_options.csv")
+.pl   <- read_out("06_placebos.csv")
+.m    <- read_out("06_estimation_main.csv")
+.pj   <- read_out("06j_exposure_partition.csv")
+.lf   <- read_out("11b_like_for_like.csv")
+
+# Adoption cohorts, by the calendar year the school first crosses the threshold.
+coh <- function(y, col = "schools") if (!is.null(.coh)) fmtn(.coh[cohort == y][[col]]) else "[n/a]"
+# Wave-to-wave transitions, as a share of school-wave transitions.
+tt <- function(dir) if (!is.null(.tt)) sprintf("%.2f", .tt[direction == dir]$pct) else "[n/a]"
+
+# Recording rate: of the schools whose directors report a given length of day,
+# the share the census records as extended. `rec` is comparable across waves;
+# `rec23` uses the finer 2023 categories.
+rec   <- function(y, h) if (!is.null(.rh))
+  sprintf("%.1f", .rh[scale == "comparable across waves" & year == y & hours == h]$rate_pct) else "[n/a]"
+rec23 <- function(h) if (!is.null(.rh))
+  sprintf("%.1f", .rh[scale == "2023 detail" & hours == h]$rate_pct) else "[n/a]"
+nrec  <- function(y, h) if (!is.null(.rh))
+  fmtn(.rh[scale == "comparable across waves" & year == y & hours == h]$schools) else "[n/a]"
+fhm   <- function(q) if (!is.null(.fhm)) {
+  v <- .fhm[quantity == q]$value; if (v >= 100) fmtn(v) else sprintf("%.1f", v) } else "[n/a]"
+# Six-hour recording across jurisdictions in 2021, before the federal programme.
+.p21 <- if (!is.null(.rp)) .rp[cut == "2021, 6h or more" & rated == TRUE] else NULL
+p21_n   <- if (!is.null(.p21)) nrow(.p21) else "[n/a]"
+p21_out <- if (!is.null(.p21)) .p21[which.min(rate_pct)] else NULL
+p21_lo  <- if (!is.null(.p21)) sprintf("%.0f", min(.p21[rate_pct > p21_out$rate_pct]$rate_pct)) else "[n/a]"
+p21_hi  <- if (!is.null(.p21)) sprintf("%.0f", max(.p21$rate_pct)) else "[n/a]"
+
+# Composition of what the census calls extended day in 2023, stock against flow.
+ctm <- function(w, cls) if (!is.null(.cont)) {
+  r <- .cont[when == w]; sprintf("%.1f", 100 * r[[cls]] / sum(r$genuine, r$horamas, r$none)) } else "[n/a]"
+ctm_n <- function(w) if (!is.null(.cont)) {
+  r <- .cont[when == w]; fmtn(sum(r$genuine, r$horamas, r$none)) } else "[n/a]"
+# Treatment-arm estimates.
+arm <- function(a, s, col = "att") if (!is.null(.arm))
+  sprintf("%.3f", .arm[estimator == "CDH" & arm == a & subject == s][[col]]) else "[n/a]"
+
+# The pooled estimator under each aggregation window, and its own placebo. The
+# regime argument selects the treatment arm: combined, or full day alone.
+hz <- function(n, s, par = "ATE", col = "estimate", rg = "combined") if (!is.null(.hs)) {
+  r <- .hs[regime == rg & spec == paste0(n, " horizon(s)") & subject == s & parameter == par]
+  if (col == "t") sprintf("%.2f", r$estimate / r$se) else sprintf("%.3f", r[[col]]) } else "[n/a]"
+# Both placebos the main specification admits, which the horizon above does
+# not report: it holds the placebo at one so that only the window varies. These
+# are the SAME estimates as the k = -1 and k = -2 leads of the event study, which
+# 06g asserts; the two exhibits are one diagnostic and never corroborate one
+# another.
+mp <- function(s, par = "Placebo_1", col = "estimate", rg = "combined") if (!is.null(.mp)) {
+  r <- .mp[regime == rg & subject == s & parameter == par]
+  if (col == "t") sprintf("%.2f", r$estimate / r$se) else sprintf("%.3f", r[[col]]) } else "[n/a]"
+# Aggregation window of the exposure classes, in ONE place. It has to match the
+# window of the pooled row the classes are read against -- `effects = 2` in
+# 06_estimation.R -- because @tbl-main sets the three classes directly underneath
+# that row and @tbl-timing-placebo pairs each with its own placebo. 06j saves four
+# windows per class, so a filter naming the wrong one returns a full set of
+# plausible numbers estimated on a different aggregation, and nothing errors. The
+# literal used to be typed three times (here and in the two chunks below) with
+# nothing tying them together, which is the same undeclared-invariant problem the
+# pipeline hit with the duplicated treatment definition.
+PJ_WINDOW <- "2 horizons"
+# An empty filter is the failure mode this constant exists to prevent, and it is
+# silent: sprintf() on a zero-row selection prints nothing rather than failing.
+if (!is.null(.pj) && !PJ_WINDOW %in% .pj$spec)
+  stop("PJ_WINDOW (", PJ_WINDOW, ") is not a `spec` in 06j_exposure_partition.csv; ",
+       "available: ", paste(unique(.pj$spec), collapse = " | "))
+
+# Exposure classes: estimate, standard error and placebo of each class.
+pj <- function(x, s, par = "ATE", col = "estimate", sp = PJ_WINDOW) if (!is.null(.pj)) {
+  r <- .pj[definition == "main" & spec == sp & exposure_years == x &
+           subject == s & parameter == par]
+  if (col == "t") sprintf("%.2f", r$estimate / r$se) else sprintf("%.3f", r[[col]]) } else "[n/a]"
+# Options the primary estimator exposes: fixed switcher sets, own trends, controls.
+opt <- function(sp, s, par = "ATE", col = "estimate") if (!is.null(.opt)) {
+  r <- .opt[spec == sp & subject == s & parameter == par]
+  if (col == "t") sprintf("%.2f", r$estimate / r$se) else sprintf("%.3f", r[[col]]) } else "[n/a]"
+# Estimation grid: any row of the main specification table.
+# Union of the 95% intervals across estimator families on the common sample: the
+# widest claim the evidence permits, computed rather than quoted, because it moves
+# whenever any family does.
+uni <- function(side) if (!is.null(.lf)) sprintf("%.2f",
+  if (side == "lo") min(.lf$att - 1.96 * .lf$se) else max(.lf$att + 1.96 * .lf$se)) else "[n/a]"
+mn <- function(e, s, col = "att", reg = "combined", cov = "none (absorbed)") if (!is.null(.m))
+  sprintf("%.3f", .m[estimator == e & regime == reg & subject == s & covariates == cov][[col]]) else "[n/a]"
+
+# ---- Parallel trends, and why the estimators disagree -----------------------
+.es   <- read_out("07_event_study_cdh.csv")
+.esc  <- read_out("07_event_study_cs_covariates.csv")
+.esx  <- read_out("07_event_study_cdh_controls.csv")
+.sc   <- read_out("06d_scale_robustness.csv")
+.reg  <- read_out("07b_kminus2_by_region.csv")
+.cd   <- read_out("07b_cohort_decomposition.csv")
+.fe   <- read_out("11_fect_results.csv")
+.ft   <- read_out("11_fect_tests.csv")
+.co   <- read_out("11_fect_carryover.csv")
+.nr   <- read_out("11_nonreverter_results.csv")
+.cvr  <- read_out("06c_covid_robustness.csv")
+.sg   <- read_out("11c_sample_grid.csv")
+
+# Event studies. `es` is the primary estimator, `esc` the doubly-robust one,
+# which is read only over its pre-treatment window (see the appendix).
+# The lead argument is named `kk`, not `k`: inside a data.table filter `k` would
+# resolve to the column of the same name and match every row.
+es  <- function(kk, s, col = "est") if (!is.null(.es))
+  sprintf("%.3f", .es[spec == "uncontrolled" & subject == s & k == kk][[col]]) else "[n/a]"
+esc <- function(kk, s, col = "est", sp = "uncontrolled") if (!is.null(.esc))
+  sprintf("%.3f", .esc[spec == sp & subject == s & k == kk][[col]]) else "[n/a]"
+# The same lead under the primary estimator with contemporaneous composition controls.
+esx <- function(kk, s, sp = "uncontrolled", col = "est") if (!is.null(.esx))
+  sprintf("%.3f", .esx[spec == sp & subject == s & k == kk][[col]]) else "[n/a]"
+# Outcome scale: the same placebo under the anchored and the within-wave scale.
+sc  <- function(s, sk, col = "k2") if (!is.null(.sc))
+  sprintf("%.3f", .sc[subject == s & scale == sk][[col]]) else "[n/a]"
+# The k = -2 mathematics placebo by region, and by adoption cohort.
+rgn <- function(r, col = "k2_math") if (!is.null(.reg))
+  sprintf("%.3f", .reg[region == r][[col]]) else "[n/a]"
+cd  <- function(gy, s = "mathematics", col = "att") if (!is.null(.cd))
+  sprintf("%.3f", .cd[k == -2 & subject == s & g_year == gy][[col]]) else "[n/a]"
+# Placebo of any specification of the primary estimator. `k` selects which one:
+# the design admits as many placebos as horizons, and for the headline it is the
+# SECOND that rejects, so a helper that silently returned the first would clear
+# specifications on half their pre-treatment evidence.
+plc <- function(e, rg, s, col = "att", k = 1) if (!is.null(.pl))
+  sprintf("%.3f", .pl[estimator == e & regime == rg & subject == s &
+                      placebo == paste0("Placebo_", k)][[col]]) else "[n/a]"
+
+# The imputation estimator, its pre-treatment tests and the two refuted stories.
+fct <- function(e, s, col = "att") if (!is.null(.fe))
+  sprintf("%.3f", .fe[estimator == e & subject == s][[col]]) else "[n/a]"
+ft  <- function(sp, col) if (!is.null(.ft)) {
+  v <- .ft[spec == sp][[col]]; if (v < 0.001) format(v, digits = 2, scientific = TRUE)
+  else sprintf("%.3f", v) } else "[n/a]"
+co  <- function(s, sp) if (!is.null(.co))
+  sprintf("%.3f", .co[subject == s & spec == sp]$att) else "[n/a]"
+nr  <- function(e, s, col = "att") if (!is.null(.nr))
+  sprintf("%.3f", .nr[estimator == e & subject == s][[col]]) else "[n/a]"
+# Wave and cohort composition, and the pre-trend test on each sample.
+cvr <- function(sp, col) if (!is.null(.cvr)) sprintf("%.3f", .cvr[spec == sp][[col]]) else "[n/a]"
+sg  <- function(sm, s, col = "fect_att") if (!is.null(.sg)) {
+  v <- .sg[sample == sm & subject == s][[col]]
+  if (col == "pretrend_f_p" && v < 0.001) format(v, digits = 2, scientific = TRUE)
+  else sprintf("%.3f", v) } else "[n/a]"
+# Identifying variation retained when the 2023 cohort is excluded, overall and
+# among the switchers that support each horizon.
+ivr <- function(m) if (!is.null(.iv)) sprintf("%.0f", .iv[metric == m]$pct_retained) else "[n/a]"
+hz_ret <- function(k) if (!is.null(.hz)) {
+  g <- function(sm) .hz[sample == sm & trimws(horizon) == paste0("Effect_", k)]$switchers
+  sprintf("%.0f", 100 * g("excl. 2023 cohort") / g("full")) } else "[n/a]"
+# Estimators on the common sample of Panel B.
+lf  <- function(e, s, col = "att") if (!is.null(.lf))
+  sprintf("%.3f", .lf[estimator == e & subject == s][[col]]) else "[n/a]"
+
+# ---- The verdict, the secondary outcome and heterogeneity -------------------
+.cl  <- read_out("06f_clustering.csv")
+.het <- read_out("10_heterogeneity_results.csv")
+.int <- read_out("10_interaction_test.csv")
+
+# Standard errors of the same estimate at three levels of aggregation.
+cl  <- function(e, s, lv, col = "se") if (!is.null(.cl))
+  sprintf("%.3f", .cl[estimator == e & subject == s & cluster_level == lv][[col]]) else "[n/a]"
+# Subgroup estimates, with and without the diagnostic exclusion.
+het <- function(dm, gp, s, sm = "full", col = "att") if (!is.null(.het))
+  sprintf("%.3f", .het[dimension == dm & group == gp & subject == s & sample == sm][[col]]) else "[n/a]"
+hetn <- function(dm, gp, s, sm = "full") if (!is.null(.het))
+  fmtn(.het[dimension == dm & group == gp & subject == s & sample == sm]$sw1) else "[n/a]"
+# The single pre-specified interaction test, and its SES-tercile counterpart.
+itx <- function(s, cmp, sm = "full", col = "p") if (!is.null(.int))
+  sprintf("%.3f", .int[subject == s & comparison == cmp & sample == sm][[col]]) else "[n/a]"
+
+# ---- Robustness and sensitivity ---------------------------------------------
+.th <- read_out("04_threshold_sensitivity_cdh.csv")
+# Small counts are spelled out in the prose, so an inline count has to be a word
+# rather than a digit; anything above the range the manuscript ever cites falls
+# back to the numeral instead of failing silently.
+num_word <- function(n) {
+  w <- c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
+  if (is.na(n) || n < 1 || n > length(w)) as.character(n) else w[n]
+}
+# Constructions of the binary indicator compared in @tbl-rob-treatdef.
+n_treatdef <- if (!is.null(.th)) num_word(uniqueN(.th$threshold)) else "[n/a]"
+
+# Rambachan--Roth: the relative-magnitude bound at which a specification's robust
+# confidence set first covers zero. Read from each specification's own file rather
+# than stated once for all four, because it is NOT the same in all four: three
+# cover zero at the smallest bound the method was run at and one does not, so a
+# single typed number would misreport a quarter of the exhibit.
+HD_SPECS <- list(c("language", "uncontrolled"), c("language", "baselinecovariates"),
+                 c("mathematics", "uncontrolled"), c("mathematics", "baselinecovariates"))
+hd <- function(s, sp) read_out(sprintf("07_honestdid_%s_%s.csv", s, sp))
+hd_zero <- function(s, sp = "uncontrolled") {
+  d <- hd(s, sp); if (is.null(d)) return("[n/a]")
+  z <- d[lb <= 0 & ub >= 0]
+  # The value is set inside $...$ in the text, so the no-coverage case returns
+  # LaTeX maths (">2") rather than the words "more than 2.0", which would be set
+  # as italic variables and spaced as a product.
+  if (!nrow(z)) sprintf("> %.1f", max(d$Mbar)) else sprintf("%.1f", min(z$Mbar))
+}
+# How many of the four cover zero at a given bound, counted rather than asserted.
+hd_n_at <- function(m = 0.5) sum(vapply(HD_SPECS, function(k) {
+  d <- hd(k[1], k[2])
+  !is.null(d) && nrow(d[abs(Mbar - m) < 1e-9 & lb <= 0 & ub >= 0]) > 0
+}, logical(1)))
+.ga <- read_out("06e_grade_alignment.csv")
+.g6 <- read_out("06e_g6_certain_bound.csv")
+
+# The pigeonhole bound: share of treated school-years in which grade-6 exposure is
+# arithmetically forced. No argument returns the total row, a year its own wave.
+g6b <- function(y = NULL) if (!is.null(.g6))
+  sprintf("%.0f", (if (is.null(y)) .g6[is.na(year)] else .g6[year == y])$pct_certain) else "[n/a]"
+
+# The treatment-definition grid, and the grade-6-certain restriction.
+th <- function(tr, s, col = "att") if (!is.null(.th))
+  sprintf("%.3f", .th[threshold == tr & subject == s][[col]]) else "[n/a]"
+ga <- function(sm, s) if (!is.null(.ga))
+  sprintf("%.3f", .ga[sample == sm & subject == s]$att) else "[n/a]"
+# The outcome under the anchored and the within-wave scale.
+scl <- function(s, sk) if (!is.null(.sc))
+  sprintf("%.3f", .sc[subject == s & scale == sk]$att) else "[n/a]"
+
+# Grade non-promotion: effect, interval and the level it is measured against, so
+# the estimate can be read against the relative effect reported by Nistal.
+# CITED, not estimated: the only number in this chunk that does not come from a
+# committed output. It is the headline of Nistal (2022) -- a 23.1%
+# reduction in non-promotion -- rescaled below onto the untreated mean of THIS
+# panel so their relative effect can be read against the interval estimated here.
+EN_REDUCTION <- 0.231
+.np <- if (!is.null(.tr)) .tr[outcome == "nonpromotion" & spec == "CDH full panel"] else NULL
+np_att  <- if (!is.null(.np)) sprintf("%.2f", .np$att_pp) else "[n/a]"
+np_lo   <- if (!is.null(.np)) sprintf("%.2f", .np$att_pp - 1.96 * .np$se_pp) else "[n/a]"
+np_hi   <- if (!is.null(.np)) sprintf("%.2f", .np$att_pp + 1.96 * .np$se_pp) else "[n/a]"
+np_base <- if (!is.null(.np)) sprintf("%.1f", .np$base_rate_pp) else "[n/a]"
+np_en   <- if (!is.null(.np)) sprintf("%.2f", EN_REDUCTION * .np$base_rate_pp) else "[n/a]"
+```
+
+# Abstract {.unnumbered .unlisted}
+
+```{=latex}
+\begin{spacing}{1.15}\noindent
+```
+Does expanding the school day raise student achievement in Argentine primary education, and for whom? This dissertation links the annual school census (*Relevamiento Anual*, 2011–2025) to six waves of the *Aprender* assessment (2016–2025) in a school-level staggered difference-in-differences design. Two features of the setting shape identification. First, the administrative extended-day category does not cleanly distinguish genuine six-hour extension from the five-hour day introduced under the federal 1h+ programme: the 2023 adoption flow is predominantly five-hour, and classification varies sharply across jurisdictions. Second, treatment is markedly non-absorbing — about 47% of ever-treated schools later contract — requiring an estimator that accommodates repeated treatment changes. The assessment calendar creates an additional problem: event time measured in waves pools schools observed at different calendar distances from their first switch. Partitioning by that timing shows that the positive mathematics estimate is concentrated among schools assessed in their adoption year, where a pre-treatment placebo is of comparable magnitude. Estimator families also disagree over the counterfactual trend; the large 2023 cohort explains much of the pre-treatment divergence and the disagreement in language, but not the remaining dispersion in mathematics. Overall, the data do not provide robustly identified evidence that longer school days raised grade-6 achievement. Estimates are larger in more disadvantaged schools, but the heterogeneity evidence remains exploratory. The effect is not identified as zero: intervals still contain policy-relevant effects in either direction.
+
+```{=latex}
+\end{spacing}
+\newpage
+\begin{spacing}{1.0}
+\tableofcontents
+\listoftables
+\listoffigures
+\end{spacing}
+\newpage
+```
+
+# Introduction
+
+When policymakers ask how to raise student achievement in unequal school systems, and especially how to raise it for the most disadvantaged, one answer recurs: give children more time in school. Lengthening the school day has featured in reforms across Europe, Latin America and the United States, [@patall2010; @oecd2021], and it promises three things at once: more hours of instruction [@carroll1963]; a more even distribution of opportunity, since school may compensate for home disadvantage [@cooper1996; @alexander2007; @quinn2016]; and, for families in precarious circumstances, care for children and the working hours it releases for their parents [@berthelon2011; @oecd2021]. The political case rarely separates the three while this dissertation measures only the first.
+
+Argentina has committed to that answer on paper for two decades. National law has required every primary school to be of extended day (more than 4 hours) or full day (8 hours) for two decades since 2026 [@len2006], against a traditional four-hour day, and successive federal resolutions have renewed the goal [@cfe426_2022; @cfe470_2024]. Delivery has not followed: in 2025, the last year of the school census, `r cnt(.ext, 2025, "share_ge_50")` primary schools clear the threshold used here, `r pct(.ext, 2025, "share_ge_50_pct")`% of the total. The intended purpose of the additional hours is also explicit: the 2022 resolution assigns them primarly to written production, reading comprehension and mathematical literacy [@cfe426_2022], while 2024 amendment restates the objective as intensifying the teaching of mathematics and language [@cfe470_2024]. These are the two domains measured by *Aprender*, Argentina's national assessment of primary pupils. Whether the longer school day improved them remains an open empirical question, and it is the question this dissertation tackles.
+
+The dissertation links Argentina's national administrative sources relevant to this question — the annual school census (*Relevamiento Anual*, RA) and the *Aprender* assessments — into a school-level panel of `r n_sw` school-waves contributed by `r n_sch` distinct primary schools, unbalanced because not every school is assessed in every wave. *Aprender* provides six waves in which both mathematics and language are tested: 2016, 2018, 2021, 2022, 2023 and 2025. Using this panel, the dissertation estimates the effect of extended- and full-day schooling on sixth-grade student achievement[^terms] in mathematics and language with a staggered difference-in-differences design. One feature of the setting determines the choice of estimator: schools do not adopt the longer day once and for all, but move in and out of it. Treatment is therefore non-absorbing, requiring an estimator that accommodates reapeated treatment changes and effects that vary across schools and over time [@dechaisemartindyn2026].
+
+[^terms]: Student achievement and test scores are used interchangeably to denote this measured construct, following OECD usage [@oecd_pisa2022].
+
+First, this dissertation shows that the census category used to track expansion does not cleanly distinguish genuine six-hour extension from the five-hour day introduced under the federal programme (*1h+*), and the resulting misclassification varies sharply across jurisdictions. The treatment process creates a second complication. Schools move into and out of the longer-day regime rather than adopting it permanently, so the analysis requires estimators that accommodate non-absorbing treatment and heterogeneous effects. These estimators do not deliver a common answer. The disagreement is itself informative: diagnostics locate much of the pre-treatment divergence and the disagreement in language in the large 2023 adoption cohort, while the remaining dispersion in mathematics is partly associated with differences in the populations the estimators weight. Taken together, the evidence does not provide a robustly identified positive effect of longer-day schooling on achievement. The closest Argentine antecedent, [@edonistal2022], instead studies grade retention across primary schooling (Appendix C relates that broader trajectory outcome to the grade-6 outcomes examined here).
+
+The remainder of this study proceeds as follows. @sec-lit reviews the theoretical framework and empirical evidence on instructional time and the distribution of its gains. @sec-context describes the setting. @sec-data presents the data, its linkage, and the construction of treatment and outcome; @sec-strategy, the research design; @sec-results reports the results, while @sec-robustness sets out the robustness, sensitivity, and diagnostic analyses. Finally, @sec-discussion discusses the study's limitations, implications, and concluding remarks.
+
+# Literature review {#sec-lit}
+
+The case for more time is direct — more hours in school should produce more learning — but it rests on a chain of assumptions the evidence does not uniformly support. This section takes the chain apart in the order the design depends on it: whether instructional time raises achievement at all, what the regional evidence says about how much, and a distributional question more consequential than the average effect — whether additional time compounds the inequalities children bring to school or offsets them.
+
+## Instructional time as an input to learning {#sec-lit-time}
+
+Instructional time is one input in an education production function whose marginal product need not be large or constant — a framing that traces back to @carroll1963, for whom achievement is a function of the time a student spends on a task relative to the time the task requires. Estimates that exploit within-student variation in time across subjects, which nets out school and student selection, find that additional instructional time does raise achievement, but that the effect is modest and contingent on how that time is used [@lavy2015; @rivkin2015]. @bietenbeck2023 revisit that evidence and find effects consistently smaller than earlier work implied. A regional synthesis reaches a compatible conclusion: because school days in Latin America and the Caribbean have historically been short, extension is plausibly high-return, but only where the added hours are well used [@holland2015]. That conditionality is the general lesson of the impact-evaluation literature in low- and middle-income countries, where additional resources raise achievement only when they change what children experience in the classroom [@ganimian2016]. More time is thus a necessary condition for more time-on-task, not a sufficient condition for higher achievement.
+
+One qualification cuts the other way, and it governs how a null should be read here. If returns to time diminish, the extra hour buys most where the starting day is shortest — and the estimates above come from systems whose days were already long, while Argentina's *jornada simple* is a four-hour shift day. The prior for this setting is therefore favourable, which is what would make a null informative rather than expected. The closest institutional parallel bears that out: @orkin2013 studies Ethiopia's 2005 abolition of shift teaching in favour of a six-hour day and finds substantially larger gains, though on ordinal measures not comparable in magnitude.
+
+## Latin American evidence and the distribution of gains {#sec-lit-latam}
+
+Quasi-experimental work on regional reforms has tried to move from this prior to policy-specific estimates, and does not speak with one voice. The positive estimates are real but small, between 0.05 and 0.11 standard deviations across Chile, Colombia and Mexico [@bellei2009; @hincapie2016; @cabrera2019]. A random-effects meta-analysis of fourteen studies across eight countries — not including Argentina — puts the pooled primary-level effect at 0.04 standard deviations in both subjects [@alvarez2019]. That benchmark is small, so a design must resolve a few hundredths of a standard deviation to be informative, and fragile: the pooled mathematics estimate is significant only at the 10% level, and individual estimates run from $-0.22$ for Brazil's *Mais Educação* to $+0.29$ for Uruguay, averaging over programmes that did different things.
+
+Others are more sceptical still: @arzola2011 finds Chile's full-day effect "small and not significant" under either definition of exposure, and a critical review of the Colombian evidence concludes the regional estimates are marginal, frequently insignificant and occasionally negative [@ramirez2019]. Nor is the ordering across subjects consistent.
+
+The distributional question is sharper, and the evidence conflicts. @hincapie2016 finds the largest gains in poorer, rural schools, and @cabrera2019 also finds them concentrated there — though quantile estimates show the lowest-performing schools do not benefit at all, and richer schools spend the extra time on non-core subjects, a mechanism for why more time need not become more learning. @bellei2009 finds larger effects among rural and public-sector pupils but also in the upper part of the achievement distribution. One study points the other way: additional school days in Mexico raise performance only slightly, and least in poorer schools [@aguero2013]. This is a modern form of the hypothesis that schooling compensates for home disadvantage [@cooper1996; @alexander2007], whose magnitude recent work questions [@quinn2016], and whether extra time compresses or widens socioeconomic gaps carries opposite implications for a policy justified in the name of equity.
+
+Two features of this literature govern how a null should be read, and both return in @sec-discussion. Extension is expensive and regional reviews judge it less cost-effective than the alternatives [@orkin2013; @holland2015; @contreras2023], so a null is informative rather than merely inconclusive [@arzola2011]. And whether an adopted programme is *sustained* is an open empirical question, yet the literature evaluates these reforms as though adoption were permanent.
+
+## The Argentine evidence and its identification {#sec-lit-arg}
+
+For a policy this large and this long-running, Argentine causal evidence on student achievement is thin. The most-cited antecedent exploits a single-city natural experiment that predates the current national framework, and finds enduring effects on educational attainment [@llach2009]. The closest modern study uses national administrative data for 2011–2019 and a two-way fixed-effects difference-in-differences design, finding that lengthening the day reduces grade retention across primary schooling by 23% [@edonistal2022] — an effect on trajectories rather than on measured achievement, estimated over a window that closes before the largest phase of the policy.
+
+That gap is empirical and methodological at once. The Argentine antecedent and much of the regional literature rely on two-way or cohort fixed-effects regressions, as does the closest institutional parallel, the Ethiopian shift-abolition study, whose districts also adopted at different times [@orkin2013]; the concern is therefore general to this literature rather than particular to Argentina. Under staggered adoption and heterogeneous effects, such estimators can be biased by "forbidden" comparisons that use already-treated units as controls [@dechaisemartin2020; @callaway2021; @goodmanbacon2021]. Two features of the Argentine setting bear on that concern. Extended-day status is non-absorbing — schools adopt the longer day and later revert, violating the assumption on which the standard staggered estimators rest — and the administrative "extended-day" category conflates genuine extension with a five-hour day introduced under a separate federal programme, so measured adoption overstates the treatment of interest.
+
+## Contribution and research question {#sec-lit-rq}
+
+Two moves position this dissertation against that literature, and the questions follow from them rather than sitting beside them.
+
+The first problematises the measure that the literature and the policy both rely on. Every estimate of this reform, regional and Argentine alike, takes the administrative record of an extended day at face value. Here that record is shown to conflate genuine extension with a five-hour day funded under the same federal programme, so part of what the aggregate statistics count as expansion is a thinner intervention — a correction to the measure rather than a robustness check on an estimate.
+
+The second problematises the identification. Prior work on this policy assumes adoption is permanent. It is not, and an estimator that assumes it discards the feature that most distinguishes this case — so establishing why estimator families disagree here is the warrant for the answer rather than an appendix to it.
+
+The dissertation therefore asks: *does the expansion of extended- and full-day schooling in Argentine primary education improve grade-6 achievement in mathematics and language?* Because credibility depends on both moves, that question is inseparable from a second: *does the estimated effect survive once treatment reversal and the measurement of genuine extension are taken seriously, and once heterogeneity-robust estimators replace two-way fixed effects?* And in light of the region's unresolved distributional debate, a sub-question asks *for whom*: whether any effect differs across the socioeconomic distribution of schools. Variation by region and by treatment intensity is reported as supporting evidence rather than as a separate question, because neither rests on enough identifying variation to carry a causal reading.
+
+# Context {#sec-context}
+
+Argentine primary education is historically a half-day system. In the traditional *jornada simple*, children attend for 4 hours a day, in a morning or afternoon shift, with a single building often serving two separate cohorts [@edonistal2022]. Extending that day has been national policy for two decades, full day understood as roughly 8 hours and extended day as more than four but fewer than eight. @tbl-framework sets out the five instruments that establish it and what each contributes to this design.
+
+```{r}
+#| label: tbl-framework
+#| tbl-cap: "Legal and programmatic framework of the longer school day."
+# Built inline: normative facts with their own citations, not estimates. The
+# citations live in the caption because a kableExtra note is raw LaTeX that
+# pandoc never sees, so a citekey placed there would print literally.
+fw <- data.table(
+  Instrument = c("Ley 26.075", "Ley 26.206", "CFE 426/22", "RM 1765/22", "CFE 470/24"),
+  Year = c("2005", "2006", "2022", "2022", "2024"),
+  `What it establishes` = c(
+    "Interim target: an extended- or full-day offer reaching 30 per cent of basic-education pupils by 2010",
+    "Primary schooling \\emph{shall be} extended or full day (art.~28); national and provincial responsibility is joint and concurrent (art.~12); creates the Consejo Federal de Educaci\\'on (art.~116); common curricular content and priority learning cores (art.~85); primary education is a single pedagogical and organisational unit, compulsory from age six (art.~26); each jurisdiction chooses six years of primary plus six of secondary, or seven plus five (art.~134)",
+    "Jurisdictions commit either to universalise the full or extended day, or to reach a minimum of 25 weekly hours",
+    "Ministerial programme, known publicly as \\emph{1h+}, funding two routes of its routes in state-managed simple-day schools: an extended day of 10 additional weekly hours, and a fifth hour of five",
+    "Targeted extension for lower-performing pupils; restates the aim as intensifying the teaching of mathematics and language"),
+  `Bearing on this design` = c(
+    "First quantified commitment against which coverage is reported",
+    "Defines the treatment in law, the federal structure that staggers its rollout, and why treatment is measured over grades 1 to 7",
+    "Creates the five-hour route that the census records as extended day",
+    "The intervention whose two modalities the census cannot separate",
+    "The stated purpose maps onto the two domains \\emph{Aprender} measures"))
+kbl(fw, booktabs = TRUE, linesep = "", escape = FALSE, align = c("l", "c", "l", "l")) |>
+  kable_styling(latex_options = "HOLD_position", font_size = 8) |>
+  column_spec(1, width = "1.8cm") |> column_spec(3, width = "6.3cm") |>
+  column_spec(4, width = "4.4cm") |>
+  tbl_note("Article numbers refer to Ley 26.206.",
+    src = paste0("Congreso de la Nación Argentina 2005, 2006; Consejo Federal de ",
+                 "Educación 2022, 2024; Ministerio de Educación de la Nación 2022, n.d."))
+```
+
+Neither law is self-executing, and the reason is structural. Argentina is federal: responsibility for education is concurrent between the national state, the provinces and the Ciudad Autónoma de Buenos Aires [@len2006]. The 24 jurisdictions own the buildings, employ the teachers and set the calendar, while the curricular content common to the whole country is agreed federally — so the curriculum *Aprender* measures against is not provincially defined. Extension therefore proceeds province by province and school by school, conditioned by classroom capacity, teacher supply and the cost of a second daily meal, some provinces having mandated the longer day before the national law and others having barely begun [@veleda2022] (@fig-provincial-timing). That decentralised rollout generates the staggered adoption exploited in @sec-strategy, and it means the schools able to adopt are not a random sample, which the identifying assumptions must confront rather than assume away. How a school comes to be treated follows from the same structure. The instruments fund and target the longer day (@tbl-framework), but the terms are settled in bilateral agreements that fix the number of schools reached rather than naming them [@rm1765_2022]. Which schools a province selects within that quota is set out in neither instrument. 
+
+Adoption is therefore neither a school's own decision nor a national one, and the selection that matters is unobserved. The system also divides by management. State schools run the schedule their jurisdiction sets, which often does not follow the national commitment (@tbl-provincias); private schools set their own, with the provincial rule a floor rather than a timetable [@len2006], so they may run longer than it requires but not shorter. The directors' reported hours show both halves of that arrangement. Before the federal programme, in 2021, the private sector ran the longer day — a mean of `r hbs(2021, "private")` hours against `r hbs(2021, "public")` in the state sector, with `r hbs(2021, "private", "pct_4h_or_less")`% of private schools at 4 hours or less against `r hbs(2021, "public", "pct_4h_or_less")`% of state ones. By 2023 the ordering has reversed, to `r hbs(2023, "public")` hours against `r hbs(2023, "private")`. The programme funds only state-managed schools running a simple day [@unahoramas], so it moved the sector it pays for and left the other where it was, which is also why adoption is concentrated there: `r pub("ever_treated")`% of schools that ever cross the treatment threshold are state-managed, against `r pub("never_treated")`% of those that never do (@tbl-balance). @tbl-jurisdictions describes the systems that decision lands on, and they are not comparable units: the largest jurisdiction holds two orders of magnitude more primary schools than the smallest, and they differ as much in how rural, how state-managed and how large their schools are.
+
+```{r}
+#| label: tbl-jurisdictions
+#| tbl-cap: "The 24 jurisdictions."
+.jp <- read_out("03_jurisdiction_profile.csv")
+if (!is.null(.jp)) {
+  z <- .jp[order(-schools_last)]
+  tab <- data.table(z$province, fmtn(z$schools_last),
+                    sprintf("%.0f", z$pct_state), sprintf("%.0f", z$pct_rural),
+                    sprintf("%.0f", z$median_size),
+                    sprintf("%.1f", z$pct_treated_first),
+                    sprintf("%.1f", z$pct_treated_last),
+                    sprintf("%.0f", z$pct_assessed))
+  kbl(tab, booktabs = TRUE, linesep = "", escape = FALSE,
+      align = c("l", rep("r", 7)),
+      col.names = c("Jurisdiction", "Schools", "State \\%", "Rural \\%",
+                    "Median size", "Treated \\%, 2011", "Treated \\%, 2025",
+                    "Assessed \\%")) |>
+    kable_styling(latex_options = c("HOLD_position"), font_size = 8) |>
+    tbl_note(paste0(
+      "Annual school census, 2025. The treated shares are given at both ends of the ",
+      "panel to show the movement. \\\\emph{Assessed} is the share of schools ever ",
+      "recorded as primary in the census that sit at least one \\\\emph{Aprender} wave; ",
+      "it is what makes the estimand local to the schools the assessment reaches."))
+} else exhibit_tbl("03_jurisdiction_profile.csv")
+```
+
+
+One feature of that structure bears directly on how treatment is measured. Each jurisdiction chooses between six years of primary followed by six of secondary and seven followed by five, so grade 6 is the final year of primary in some provinces and the second-to-last in others; and the census records the longer day for the cycle as a whole rather than for any one grade, which is why treatment is built over grades 1 to 7 (@sec-data-treat).
+
+Implementation has fallen short of the commitments, and unevenly: in 2019 only 14.1% of primary pupils attended for more than 4 hours a day, with the jurisdictions ranging over the whole interval between [@veleda2022]. The census panel assembled here adds the feature that matters for what follows: the extended-day share was flat for the six years to 2022 and then doubled in a single year, to `r ext_23`% in 2023, while the share of schools running the extended day for their *entire* primary enrolment rose from `r ext100_22`% to `r ext100_23`% and the full-day share moved only to `r ful_23`%. The organisational change a genuine extension requires does not reach a tenth of the country's primary schools in twelve months.
+
+This context matters for two reasons that run into the analysis. The first is equity. Children are the poorest age group in Argentina: in the second half of 2025, 41.3% of people aged 0 to 14 lived in households below the poverty line, against 9.7% of those aged 65 and over [@indec2026]. Federal resolutions justify the longer day as an instrument for the "sectors of greatest social vulnerability" [@cfe470_2024], while coverage is highest among pupils in the most advantaged socioeconomic category (20.8%), lowest in the middle one (11.8%), and intermediate among the most disadvantaged (17.4%) [@veleda2022]. Whether additional time helps or hurts the most disadvantaged — the distributional question of @sec-lit-latam — is a live feature of the Argentine case and not only a question in the literature.
+
+The second is measurement. The day is lengthened in two ways — some jurisdictions double it, others add a single hour [@veleda2022] — but both became federal policy in 2022 under one programme, 1h+ (@tbl-framework), reported to reach more than eleven thousand schools across twenty-two jurisdictions [@nistal2024; @unahoramas]. The census records both under the same label, so any credible estimate must first separate genuine extension from this administrative expansion (@sec-data-treat, @sec-results-rollout)
+
+```{r}
+#| label: fig-provincial-timing
+#| fig-cap: "Provincial adoption of the extended day, 2011--2025."
+#| out-width: "100%"
+exhibit_fig("03_provincial_timing.png")
+```
+
+```{=latex}
+\fignote{Shading is the share of a province's primary schools whose expanded
+enrolment reaches the 50\% treatment threshold in that year, on the annual
+census. The unit here is the \emph{province}, which is where adoption is
+decided; the estimator itself runs at the level of the \emph{school}
+(\S5.2), so a pale row is a jurisdiction in which few schools crossed the
+threshold and not one in which the policy was absent. Adoption is staggered
+across jurisdictions and reverses in places: Santa Cruz goes from 6.8\% in
+2021 to 82.2\% in 2022 and 83.1\% in 2023, then falls to 22.7\% in 2024 and
+18.5\% in 2025, the provincial council having suspended the programme for the
+2024 school year. That reversal is the non-absorbing treatment the estimator is
+chosen for. At the other end, Corrientes and San Luis never exceed 5.3\% and
+7.3\% in any year of the census.}
+```
+
+# Data and measurement {#sec-data}
+
+## Sources and linkage {#sec-data-sources}
+
+This study combines two administrative sources produced by the same national office, the *Subsecretaría de Información y Evaluación Educativa*. The first is the RA, an annual census of every school in the country, here restricted to establishments offering primary education in at least one year between 2011 and 2025. The second is *Aprender*, the national standardised assessment of grade-6 students, in the six waves that measure both mathematics and language: 2016, 2018, 2021, 2022, 2023 and 2025, of which 2022 is a school-level sample and the rest censuses. The RA supplies the treatment, structural covariates and a secondary outcome; *Aprender* supplies the achievement outcomes and pupil composition.
+
+The two sources are linked at the school level by a 15-digit fictitious identifier the agency assigns consistently across them, and linkage is near-complete: between `r link_lo`% and `r link_hi`% of assessed schools match a census record in every wave (@tbl-match). The resulting estimation panel comprises `r n_sw` school-waves within the longer annual census, which tracks each school's treatment from 2011 to 2025. It is unbalanced — a school contributes only in the waves it was assessed, and just `r bal_pct`% appear in all six — but the estimators used below are built for unbalanced panels and do not require a school to be observed throughout.
+
+*Aprender* does not reach every school: of the `r n_prim` schools ever recorded as primary across 2011--2025, about `r cov_pct`% are assessed at least once, and `r n_sch` carry both a score and a treatment history — the estimation sample. What it misses is not a random remainder: within census waves, unassessed schools are far smaller (median primary enrolment `r med_out` against `r med_in`) and much less often treated (`r trt_out`% against `r trt_in`%). The estimand is therefore local to schools large enough to be assessed, and the results should not be read as covering the smallest tail of the primary system.
+
+```{r}
+#| label: tbl-match
+#| tbl-cap: "Linkage of the *Aprender* assessment to the annual school census, by wave."
+if (!is.null(.mr)) {
+  tab <- data.table(
+    Wave     = as.character(.mr$year),
+    Frame    = fifelse(.mr$wave_type == "census", "Census", "Sample"),
+    Assessed = fmtn(.mr$schools),
+    Matched  = fmtn(.mr$matched_ra),
+    Rate     = sprintf("%.2f", .mr$match_rate))
+  kbl(tab, booktabs = TRUE, linesep = "", align = c("l", "l", "r", "r", "r"),
+      col.names = c("Wave", "Frame", "Assessed", "Matched", "Match rate")) |>
+    kable_styling(latex_options = "HOLD_position") |>
+    add_header_above(c(" " = 2, "Schools" = 2, "Per cent" = 1)) |>
+    tbl_note(
+      "Schools assessed by \\\\emph{Aprender} in grade 6, and those linking to ",
+      "an RA census record in the same year, by assessment wave. Linkage is on the ",
+      "agency's 15-digit anonymised school identifier.")
+} else exhibit_tbl("01_match_rate_by_wave.csv")
+```
+
+## Treatment construction {#sec-data-treat}
+
+The RA records neither a school's schedule as a category nor the daily hours it runs; it records only counts of primary pupils by regime — extended (more than 4 hours) or full (8 hours) — since a school may run the longer day for only part of its enrolment. What it does give is the expanded share of primary enrolment under those regimes, which spans grades 1 to 7 (@sec-context). That share is coverage, not intensity in hours; since the theory-relevant dose is hours, which the RA does not record, treatment is a binary indicator on the share rather than a continuous dose, marking schools where it reaches 50% (@eq-treat).[^dose] The indicator is contemporaneous — whether the school clears the threshold in a given year, and nothing else. Persistence is not imposed: on the annual history the longer day is markedly *non-absorbing* (@sec-strategy-est), and requiring the threshold to hold across adjacent years would smooth away the very oscillation the estimator is built to handle.
+
+[^dose]: The share is not a continuous dose: it measures the fraction of pupils under the longer-day regime, not the length of their day, and instructional time (@sec-lit-time) operates on hours, which the census never records. Intensity in that sense is observable only from the directors' reported hours, and enters through the hours-verified estimates of @sec-results-rollout.
+
+A final step separates two schedules the RA records alike. The federal *1h+* programme funds both a genuine extension and a fifth hour bolted onto an otherwise simple four-hour day [@rm1765_2022; @unahoramas], and the census may record the resulting five-hour school as "extended". The directors' questionnaire reports grade-6 daily hours in the 2021, 2022 and 2023 waves (items `dp23`, `dp18`, `dp47`); each school takes a single time-invariant label from the *highest* it ever reports — *genuine* (six or more), *five-hour*, or *simple* (four or fewer) — a fixed label, since classifying hours wave-by-wave would let treatment flicker between five and six, and is kept only as a sensitivity check. The label identifies the schedule a school runs, not the programme it joined, which the data do not record; timing still comes from the census. Where hours are never observed the census label stands, conservative before the programme existed (@sec-results-rollout). @tbl-treatdef lists every construction and the role each plays.
+
+```{r}
+#| label: tbl-treatdef
+#| tbl-cap: "Every construction of treatment used below."
+# Definitional, not estimated: thresholds are design constants like the choice of
+# estimator, so they are typed here as in @tbl-threats. The estimates that go with
+# each row are in @tbl-rob-treatdef and @tbl-rob-specs.
+
+td <- data.table(
+  Construction = c("Share $\\geq$ 50\\% (primary)",
+                   "Share $>$ 0, $\\geq$ 40\\%, $\\geq$ 60\\%, $\\geq$ 75\\%",
+                   "Full-day arm",
+                   "Hours-verified arms",
+                   "Grade-6-enrolment weights"),
+  Definition = c(
+    "$D_{gt}=\\mathbf{1}\\{s_{gt}\\geq 0.5\\}$, evaluated in the year itself",
+    "The same indicator at other cut-offs of the expanded share",
+    "$\\mathbf{1}\\{$full-day share $\\geq 0.5\\}$, on the full-day count alone",
+    "Directors' reported daily hours: six or more, exactly five, four or fewer",
+    "The same $D_{gt}$, with schools weighted by grade-6 enrolment"),
+  Role = c("Main specification",
+           "Robustness --- same estimand",
+           "Different treatment: an eight-hour day, against all other regimes",
+           "Different treatment: the schedule actually run, not the regime recorded",
+           "Re-targets the estimand: the average pupil, not the average school"))
+kbl(td, booktabs = TRUE, linesep = "", escape = FALSE, align = "l") |>
+  kable_styling(latex_options = "HOLD_position", font_size = 8) |>
+  column_spec(1, width = "3.2cm") |> column_spec(2, width = "5.6cm") |>
+  column_spec(3, width = "5.0cm") |>
+  tbl_note(
+    "Only the first is the main specification; the last three answer different questions rather than checking the same one. The distinction in the last column is not presentational. The row marked as ",
+    "robustness varies a decision that could defensibly have been made otherwise and ",
+    "should leave the same parameter where it is; the last three estimate something ",
+    "else, so disagreement with the main specification is information about which ",
+    "question is being asked rather than evidence of fragility. Weighting in particular ",
+    "moves the mathematics estimate, and that is a finding rather than a failure.")
+```
+
+## Outcomes {#sec-data-out}
+
+The primary outcomes are school mean scores in mathematics and language on *Aprender*'s item-response scale, anchored to the 2016 reference (mean 500, standard deviation 100) so that scores are comparable across waves. Following the assessment's official methodology, school means are unweighted: the survey weights correct jurisdiction- and sector-level totals, not within-school averages. Effects are reported in standard-deviation units of that fixed scale. Because each wave assesses a fresh grade-6 cohort, the outcome is a repeated cross-section of school performance rather than a value-added measure following the same pupils.
+
+A secondary outcome uses the census directly: annual grade-6 grade progression — non-promotion (repetition) and dropout — available every year, offering a longer pre-treatment window and a check on whether treatment changes the composition of who sits the exam (Appendix C).
+
+## Ethics and data governance {#sec-data-ethics}
+
+This project underwent the LSE research ethics review process prior to any analysis. Because it relies solely on secondary administrative records, already pseudonymised at source, with no contact with the population under study, the review returned that no further approval was required.
+
+The data are nonetheless restricted, not public. They were obtained from the *Subsecretaría de Información y Evaluación Educativa* under a signed confidentiality agreement, in a release where each school carries a fictitious code rather than its real identifier. All analysis is conducted at the school level or above, never at the level of identifiable individuals, and the replication materials contain only code and aggregate outputs, not the underlying microdata.
+
+# Empirical strategy {#sec-strategy}
+
+The research design is a difference-in-differences with staggered adoption: each school's mean score is compared before and after it crosses the treatment threshold with the scores of schools that have not yet crossed it, and the estimates are read as an event study in time since adoption, identified under parallel trends (@sec-strategy-assump). One feature of the setting shapes the estimator below: because provincial funding is switched on and off, a school can cross the threshold, fall back, and cross again, so adoption is staggered but not absorbing.
+
+## The estimand {#sec-strategy-estimand}
+
+The parameter of interest is a school-level intention-to-treat effect. Let $Y_{gt}$ be the mean grade-6 score of school $g$ in wave $t$, $D_{gt}\in\{0,1\}$ the extended- or full-day indicator, and $Y_{gt}(1)$, $Y_{gt}(0)$ the potential outcomes under the two regimes. The target is:
+
+$$
+\tau = \mathbb{E}\!\left[\,Y_{gt}(1) - Y_{gt}(0) \mid D_{gt}=1\,\right],
+$$ {#eq-estimand}
+
+the average effect on the schools that actually operate the longer day. Two features of @eq-estimand are decisions rather than defaults, and each is stated here: the unit is the school, and the effect is intention-to-treat.
+
+The unit is the school, not the pupil: the policy is adopted by schools, exposure is recorded for schools, and the outcome is a school mean. Weighting by enrolment targets a different quantity, the effect on the pupil the system is more likely to contain; that is a legitimate object rather than a robustness check, and is reported as such in @sec-results-headline.
+
+And $\tau$ is an intention-to-treat effect, comparing schools by the regime they operate rather than by the hours any grade-6 cohort received. Two gaps separate treatment from outcome: the count is for the cycle rather than the grade (@sec-context), and no record links a pupil to the schedule they attend. The first gap is bounded by arithmetic rather than assumed: grade-6 exposure is forced in `r g6b()`% of treated school-years, rising from `r g6b(2016)`% in the first wave to `r g6b(2025)`% in the last. That bounds whether grade 6 is exposed, not what share of it is, and not the individual-level effect: peer effects, resource reallocation and compositional change can move the school- and pupil-level parameters apart in either direction.
+
+The treated set is defined by the expanded share crossing one half. Writing $s_{gt}$ for the share of primary enrolment in an extended or full day,
+
+$$
+D_{gt} = \mathbf{1}\{s_{gt} \ge 0.5\}, \qquad
+s_{gt} = \frac{N^{\text{ext}}_{gt} + N^{\text{full}}_{gt}}{N_{gt}},
+$$ {#eq-treat}
+
+with $N^{\text{ext}}$ and $N^{\text{full}}$ the counts of primary pupils in each regime (@sec-data-treat).
+
+## Estimator choice {#sec-strategy-est}
+
+The estimand is not the estimator. The design is a staggered difference-in-differences, and the primary estimator is therefore that of @dechaisemartindyn2026, which admits treatments that switch more than once and compares switchers with units not yet switched. That choice is forced by the treatment process: the longer day is a provincial programme schools enter and — in the public sector, as provincial transfers are switched on and off (@sec-context) — leave again. `r rev_pct`% of ever-treated schools contract at some point in the annual record, `r readopt_pct`% subsequently re-adopt, and `r n_multi` change regime twice or more, the paths @fig-trajectories illustrates. *Adoption is not absorbing.*
+
+That rules out the estimators built on absorbing adoption. Callaway--Sant'Anna [@callaway2021] identifies group-time effects under a first-treatment cohort structure and is not defined for units that switch back; two-way fixed effects under staggered timing with heterogeneous effects is a weighted average of two-by-two comparisons with possibly negative weights, some using already-treated units as controls [@goodmanbacon2021; @dechaisemartin2020; @sunabraham2021; @baker2026]. Both are reported as comparisons in @sec-robustness — Callaway--Sant'Anna fitted on the subsample that never contracts, two-way fixed effects as a benchmark not expected to identify @eq-estimand.
+
+Writing $F_g$ for the first wave at which $D_{gt}$ changes, the estimator forms at each horizon $\ell$ a double difference: the change in a switcher's score from the wave before its switch, less the same change for schools not yet switched,
+
+$$
+\hat\delta_\ell = \mathbb{E}\!\left[Y_{g,F_g-1+\ell} - Y_{g,F_g-1} \mid \text{switcher}\right]
+ - \mathbb{E}\!\left[Y_{g,F_g-1+\ell} - Y_{g,F_g-1} \mid \text{not yet switched}\right].
+$$ {#eq-did}
+
+The reported effect aggregates the first two horizons, $\hat\delta_1$ and $\hat\delta_2$, weighted by the switchers each supports; later horizons rest on too few switchers to estimate, and are shown but not aggregated (@sec-results-diagnosis). Placebos are the same contrast run backwards over pre-treatment waves.
+
+```{r}
+#| label: fig-trajectories
+#| fig-cap: "Expanded-day share for illustrative schools, one row per archetype."
+#| out-width: "100%"
+exhibit_fig("05_school_trajectories.png")
+```
+
+```{=latex}
+\fignote{The dashed line marks the 50\% treatment threshold (@eq-treat): a
+school is treated in the years its share is above it. `One-way exit' and
+`oscillator' schools cross the line and fall back, so adoption is not
+absorbing --- the property that rules out estimators built on a single,
+permanent switch. Schools are drawn from the annual census and are illustrative
+of each archetype rather than representative of it; the share is extended- and
+full-day enrolment combined, which is the quantity the indicator is defined on.}
+```
+
+## Event time: waves, calendar time and exposure {#sec-strategy-time}
+
+Three quantities must be kept apart (@tbl-time): event time, calendar time since the first change, and exposure, the years actually treated. Under an absorbing treatment the last two coincide; here a school can switch on, contract, and be assessed having accumulated fewer treated years than have elapsed. The first coefficient pools calendar distances from the adoption year itself to `r exp_max` years, with `r exp_modal_pct`% at the modal length.
+
+```{r}
+#| label: tbl-time
+#| tbl-cap: "Event time, calendar time since adoption and exposure: three quantities that come apart under this design and cannot be treated as one."
+tq <- data.table(
+  Quantity = c("\\textsc{event time}",
+               "\\textsc{calendar time since first adoption}",
+               "\\textsc{exposure}"),
+  Counts = c("Periods since the school's first treatment change",
+             "Years between the annual switch and the wave at which the school is assessed",
+             "Years the school has actually been treated, $C_{gt}=\\sum_{\\tau=F_g}^{t} D_{g\\tau}$"),
+  `Measured in` = c("Assessment waves", "Years", "Years"),
+  `Equal to exposure?` = c("Never (waves $\\ne$ years)",
+                           "Only under an absorbing treatment",
+                           "By definition"))
+kbl(tq, booktabs = TRUE, linesep = "", escape = FALSE, align = "l") |>
+  kable_styling(latex_options = "HOLD_position", font_size = 8) |>
+  column_spec(1, width = "3.3cm") |> column_spec(2, width = "6.0cm") |>
+  column_spec(3, width = "2.0cm") |> column_spec(4, width = "2.9cm") |>
+  tbl_note(
+    "The estimator indexes its effects by the first row. The paths $0,1,0,0$ and ",
+    "$0,1,1,1$ share an event time and a calendar time and differ in exposure, which is ",
+    "why the three cannot be treated as one. The outcome is observed in six waves ",
+    "spaced unevenly while treatment is recorded annually, so schools at the same ",
+    "event-time index sit at different calendar distances from their own switch.")
+```
+
+This matters for the question and not only for the arithmetic. If instructional time is an input with diminishing returns (@sec-lit-time), the theory predicts that the effect should *grow with exposure*. A coefficient averaging a school measured in its adoption year with one measured four years in cannot test that prediction: its weights over calendar distances are a property of the assessment calendar rather than of the policy.
+
+The remedy for outcomes observed less often than the treatment is to partition switchers by where the first change falls relative to the outcome dates and estimate once per partition, using the annual treatment information *only* to select the subsamples [@dechaisemartincompanion2025]. The *Aprender* calendar is irregular rather than periodic, so the partition here is by *calendar time since first adoption*, fixed at every horizon once the wave and the year of the first change are known. Each class is estimated against all never-switching school-waves and classes are not pooled; those holding `r exp_top3_pct`% of switchers are estimated, the remainder reported and not estimated.
+
+One limit is declared rather than absorbed: the partition homogenises calendar time, not exposure — at the second horizon of the one-year class only `r gap_h2_e1`% of schools were treated throughout the elapsed window. Partitioning on years treated would mean leaving the estimator's own event time, anchored at the first change.
+
+## Identifying assumptions {#sec-strategy-assump}
+
+Identification rests on three assumptions. \textsc{Parallel trends}: absent a change in regime, treated and not-yet-treated schools would have followed the same path in mean achievement, conditional on the covariates entering each specification. \textsc{No anticipation}: outcomes before a school's first change do not respond to the change to come — plausible here, since the assessment measures pupils already enrolled and provincial funding decisions are not announced a year ahead. \textsc{SUTVA}: No interference is plausible given dispersed schools and own-pupil outcomes, though shared provincial funding is a channel the not-yet-treated comparison does not close (@sec-strategy-inf). Consistency fails as the census records treatment, bundling five-, six- and eight-hour days; separating them by reported hours is the response (@sec-results-rollout), so the measurement correction is in part a consistency analysis.
+
+The comparison group is *not-yet-treated* rather than never-treated. Never-treated schools here are systematically different — smaller, more rural, more often outside the assessment frame altogether (@sec-data-sources) — so restricting the comparison to them would trade a weaker assumption for a worse-matched counterfactual. The not-yet-treated group keeps the comparison inside the population that eventually adopts, at the cost of requiring that the timing of adoption be unrelated to the counterfactual path — a requirement about when a province contracts and about which schools it then picks within its quota (@sec-context), neither of which is observed.
+
+Baseline covariates enter only the doubly-robust specification: the primary estimator differences within school, so a time-invariant covariate has $\Delta X = 0$ and drops out — time-invariant confounders, observed and unobserved, difference out with it, so identification turns on parallel trends rather than on controlling for them, and differential time-varying confounding is what the placebos probe (@sec-results-diagnosis). That is a property of the estimator, not a judgement about which confounders matter, and it is why the socioeconomic covariate — the characteristic provincial programmes use to select schools (@sec-context) — appears only there. Appendix A sets out which schools that specification drops and how its cohorts are dated.
+
+## Inference {#sec-strategy-inf}
+
+Inference in this design cannot be made to look clean. Two things must be kept apart: the *level* at which dependence is allowed, and the *procedure* that estimates it.
+
+The level is a substantive question, and the design answers it: the province. Adoption is coordinated there, the funding decisions that reverse it are taken there, measurement error in the treatment is structured by jurisdiction (@sec-results-rollout), and untreated shocks may themselves be provincial [@abadie2023]. The estimator's default variance is computed at the group level — here the school — and is reported throughout for comparability, not because the design argues for it.
+
+The procedure admits no clean answer. There are `r n_prov` jurisdictions but they are very unequal, with an effective number near `r eff_sw` [@carter2017], and both available procedures need more independent information across clusters than that supplies. The wild cluster bootstrap [@cameron2008; @mackinnon2018] is defined on regression residuals, so it reaches the two-way fixed-effects benchmark and not the primary estimator; what that estimator offers is a nonparametric pairs cluster bootstrap over whole provinces. Both are reported in @sec-rob-sensitivity and no conclusion turns on either.
+
+Two consequences follow for how the results are read. Because no province-level procedure is reliable at this cluster count, the discussion turns on the size of estimates and their placebos rather than on which side of a threshold a p-value falls (@sec-results-verdict). And because adoption is provincially concentrated, a leverage check is more informative than further intervals: dropping one province at a time moves the wave-indexed mathematics estimate between `r lopo_lo` and `r lopo_hi`, and none takes it across zero — point estimates, not an inference procedure.
+
+```{r}
+#| label: tbl-threats
+#| tbl-cap: "Threats to identification, the check that addresses each, and what kind of check it is."
+threats <- data.table(
+  Threat = c("Event time mixes exposure lengths", "Treatment definition drives the result",
+             "Grade-6 exposure (whole-primary count)",
+             "Score-scale comparability", "Five-hour contamination",
+             "Repeated cross-sections change composition",
+             "School- vs pupil-average estimand", "Comparison group",
+             "Parallel trends (primary estimand)",
+             "Parallel trends (absorbing subsample)", "Estimator choice",
+             "Within-province dependence in the errors",
+             "One adoption cohort drives the disagreement"),
+  Check = c("Partition by time since first adoption, estimated separately",
+            "Cut-offs 0/40/50/60/75\\%",
+            "Pigeonhole bound; grade-6-certain restriction",
+            "Within-wave standardisation", "Genuine 6h+ vs five-hour split (directors' hours)",
+            "Grade-progression (flow) outcomes",
+            "Enrolment-weighted re-estimation", "Never-treated instead of not-yet-treated",
+            "Effect against the placebo of the same specification",
+            "HonestDiD bounds; equivalence tests", "CDH / CS / FEct / TWFE compared",
+            "Province-clustered analytic and resampled SEs; leave-one-province-out points",
+            "2023-cohort exclusion; identifying-variation count"),
+  # Position 6 is the grade-progression check. It is NOT another way of estimating
+  # the achievement effect -- it uses a different outcome to rule out a different
+  # threat, that the measured mean moved because a different kind of pupil sat the
+  # test -- so it is a composition check and not an alternative implementation.
+  Kind = c("Identification", "Robustness", "Robustness", "Robustness", "Robustness",
+           "Diagnostic", "Robustness", "Robustness", "Sensitivity",
+           "Sensitivity", "Robustness", "Sensitivity", "Diagnostic"))
+kbl(threats, booktabs = TRUE, linesep = "") |>
+  kable_styling(latex_options = "HOLD_position", font_size = 10) |>
+  column_spec(1, width = "4.6cm") |> column_spec(2, width = "6.6cm") |>
+  column_spec(3, width = "2.2cm") |>
+  tbl_note(paste0(
+    "The two parallel-trends rows address different estimands and are not ",
+    "interchangeable: the effect-against-placebo comparison is a diagnostic on the ",
+    "primary estimand, while the Rambachan--Roth bounds are computed on the ",
+    "doubly-robust estimator's absorbing subsample and speak only to it. Resampling ",
+    "schemes also differ by estimator -- the wild cluster bootstrap is defined only ",
+    "where the estimand is a regression coefficient -- so p-values are not comparable ",
+    "across estimators as measures of evidential strength."))
+```
+
+# Results {#sec-results}
+
+## What the treatment is {#sec-results-rollout}
+
+Adoption is staggered, and the cohorts are very unequal. @tbl-cohorts dates each school by the year it first crosses the threshold. Most cohorts hold a few hundred schools; two do not. `r coh("already treated in 2011 (left-censored)")` schools already run the longer day in 2011 and are left-censored, with no pre-treatment period. And 2023 holds `r coh("2023")` schools, `r coh("2023", "in_estimation_sample")` in the estimation sample — an order of magnitude above its neighbours. That one cohort supplies most of the identifying variation, and @sec-results-diagnosis returns to it.
+
+The aggregate share of schools running a longer day hides the movement underneath it (@fig-transitions): entries and exits are both large, and the 2023 entry spike is followed at once by contractions in 2024. Over the full annual census, `r rev_pct`% of ever-treated schools later contract. Between assessment waves the movement is smaller — `r tt("increase")`% of transitions are increases, `r tt("decrease")`% decreases (@tbl-switching) — but the annual figure is the one that describes the treatment, since a school that contracts and re-adopts between two waves never shows up in the wave-to-wave count. Adoption is therefore not the absorbing transition the regional evaluations assume, which is why the estimator admits treatment that switches in both directions (@sec-strategy-est).
+
+One feature of the assessment frame runs through everything below. *Aprender* does not reach the smallest schools (@sec-data-sources), so the same size-dependent coverage decides which schools contribute to each horizon. Adopting and never-adopting schools differ on structure, not on baseline achievement (@tbl-balance) — a difference that matters as the burden the conditional parallel-trends assumption carries, not as imbalance in levels, which differencing removes.
+
+The census records a five-hour day under the same label as a genuine six- or eight-hour one (@sec-data-treat); the directors' reported hours tell them apart. @fig-contamination puts the split where it matters. Of the `r ctm_n("adopted <2023 (stock)")` schools recorded as extended in 2023 that had adopted earlier — the stock — `r ctm("adopted <2023 (stock)", "genuine")`% report 6 hours or more; of the `r ctm_n("adopted 2023 (flow)")` adopting in 2023 — the flow — only `r ctm("adopted 2023 (flow)", "genuine")`% do, and `r ctm("adopted 2023 (flow)", "horamas")`% report exactly five. The stock is almost all genuine; the flow is majority five-hour; and the flow is what identifies the effect, because a staggered design is built on the schools that switch.
+
+The problem is the variable, not one year. The census records a *category* each jurisdiction defines for itself (@sec-context); the questionnaire asks a *quantity* that means the same everywhere, so one can be used to audit the other. The census's recording rate rises with reported hours — in 2023, `r rec23("4h or less")`% at 4 hours or less, `r rec23("5h")`% at five, `r rec23("6h")`% at six, `r rec23("7h or more")`% at seven or more — tracking the length of the day everywhere except at the five-hour step. The yardstick is thin (at most three reports per school, and 2022 only for sampled schools), so it is stated here rather than relied on silently. But the failure is not new: in 2021, before the federal programme, the five-hour rate was already `r rec(2021, "5h")`% against `r rec(2021, "6h or more")`% at 6 hours or more. The instrument did not deteriorate; the population moved — schools reporting exactly five hours rose from `r nrec(2021, "5h")` to `r nrec(2023, "5h")`, tripling the number standing exactly where the variable fails.
+
+The error runs both ways, and only one way is merely descriptive. Where a five-hour school is recorded as extended, the aggregate overstates genuine extension: `r fhm("% of census extended day that is a five-hour school")`% of what the census calls extended day in 2023 is a five-hour school. Where it is not recorded, the aggregate understates it, and `r fhm("of which left in the comparison group")` five-hour schools stay in the comparison group. The second is a threat to identification, not just to description: part of the untreated group has in fact received a smaller dose of the same intervention, and the misclassification is neither classical nor independent of jurisdiction.
+
+The jurisdictional pattern is not a provincial reporting rule — schools, not provinces, complete the census. It is that the federal programme took a different name, schedule and legal form in each jurisdiction (@tbl-provincias), on top of provincial models that already differed [@veleda2013], so a school reports in its own jurisdiction's category. That this is framing, not noise, shows where the object is unambiguous: in 2021, of the `r p21_n` jurisdictions with at least thirty schools reporting 6 hours or more, all but one record them at between `r p21_lo`% and `r p21_hi`% — the exception being `r if (!is.null(p21_out)) p21_out$province else "[n/a]"`, where the simple day legally runs to 25 weekly hours. The closest Argentine antecedent reached the same judgement from the other side, restricting its use of this variable to years up to 2019 [@veleda2022].
+
+Separating the two schedules leaves the average almost unchanged, as contamination in the flow rather than the stock implies: `r arm("genuine 6h+ (stable)", "mathematics")` in mathematics on schools verified at 6 hours or more, `r arm("1h+ 5h (stable)", "mathematics")` on the five-hour schools, neither distinguishable from zero (@tbl-arms). Whatever positive estimate exists belongs to genuine extension; the five-hour day alone cannot be shown to move test scores. The correction is therefore not a rescue of the estimates but a finding about the statistics used to report progress on the legal commitment — statistics that do not measure what the commitment is about.
+
+```{r}
+#| label: fig-transitions
+#| tbl-cap: ""
+#| fig-cap: "Schools entering and leaving the extended-day regime, by year."
+#| out-width: "92%"
+exhibit_fig("05_transitions.png")
+```
+
+```{=latex}
+\fignote{Adoptions are plotted above the axis and contractions below, on the annual school census rather than on the six assessment waves. Contractions occur in every year of the panel, which is the design fact that rules out an absorbing-adoption estimator; the 2023 entry spike is followed immediately by the largest wave of contractions in the series.}
+```
+
+```{r}
+#| label: tbl-provincias
+#| tbl-cap: "The federal programme as each jurisdiction implemented it."
+# The three qualitative columns are DOCUMENTARY and typed here; the source class
+# of each row is declared so a regulation is not read as a press report. Both
+# quantitative columns are read from committed outputs -- the treated share from
+# the annual census, the recording rate from the directors' hours -- because
+# typing them once let one of them go stale against its own output.
+prov <- data.table(
+  Jurisdiction = c(
+    "Chaco", "Santa Fe", "Tucumán", "Jujuy", "Córdoba", "Santiago del Estero",
+    "Corrientes", "Entre Ríos", "Buenos Aires", "Misiones", "San Luis",
+    "La Pampa", "Santa Cruz", "Chubut", "La Rioja", "San Juan", "Salta",
+    "CABA", "Formosa", "Tierra del Fuego", "Catamarca", "Mendoza",
+    "Neuquén", "Río Negro"),
+  Programme = c(
+    "Jornada ampliada", "Plan 25, then \\emph{Una más!}", "Jornada extendida",
+    "\\emph{Hora Más}", "Jornada Extendida (2010) + fifth hour (2022)",
+    "Una hora más", "Nation--province agreement", "NEP -- Nueva Escuela Primaria",
+    "Una hora más", "did not join", "did not join",
+    "joined Oct 2022", "joined 2022; suspended from 2024",
+    "joined before Jan 2023", "joined Sep--Oct 2022", "joined 2022", "joined 2022",
+    "ratified Dec 2022", "joined 2022", "joined Jul 2022", "joined 2022",
+    "Nation--province agreement", "joined Oct 2022", "Nation--province agreement"),
+  Scope = c(
+    "1,111 schools, universal", "25 weekly hours, universal",
+    "630 schools, 140,000 pupils", "137 schools, urban",
+    "2nd cycle 6h in 1,062 schools; 1st cycle 5h, 681 to 1,726 services",
+    "1,157 schools, min.\\ 25 weekly hours", "286 schools, 38\\% of establishments",
+    "932 schools, universal Nov 2022", "914 (261 to full day, 653 to a fifth hour)",
+    "--", "--", "--", "Acuerdo CPE 51/24 suspends state primaries", "--", "--",
+    "--", "--", "--", "437 schools (Feb 2023)", "--", "--",
+    "continuity guaranteed after the 2024 cut", "--", "--"),
+  Source = c(
+    "gov.", "gov.", "press", "gov.", "press", "gov.", "gov.", "gov.", "press",
+    "press", "press", "press", "reg.", "press", "press", "press", "press",
+    "press", "press", "gov.", "press", "gov.", "press", "gov."))
+.pt <- read_out("03_provincial_timing.csv")
+.rp <- read_out("08b_recording_by_province.csv")
+sh <- function(p, y) { v <- .pt[province == p & year == y]$pct_treated
+  if (length(v) == 0) NA_real_ else v }
+rr <- function(p) { v <- .rp[cut == "2023, 5h" & province == p]$rate_pct
+  if (length(v) == 0) NA_real_ else v }
+prov[, `Census 2022-23` := vapply(Jurisdiction, function(p) {
+  a <- sh(p, 2022); b <- sh(p, 2023)
+  if (is.na(a) || is.na(b)) "--" else sprintf("%.1f to %.1f", a, b) }, character(1))]
+prov[, `Recording rate` := vapply(Jurisdiction, function(p) {
+  v <- rr(p); if (is.na(v)) "--" else sprintf("%.1f", v) }, character(1))]
+setcolorder(prov, c("Jurisdiction", "Programme", "Scope", "Census 2022-23",
+                    "Recording rate", "Source"))
+kbl(prov, booktabs = TRUE, linesep = "", escape = FALSE,
+    align = c("l", "l", "l", "r", "r", "l")) |>
+  kable_styling(latex_options = c("HOLD_position", "scale_down"), font_size = 8) |>
+  column_spec(2, width = "3.2cm") |> column_spec(3, width = "4.4cm") |>
+  tbl_note(paste0(
+    "The same national programme carries a different name, a different schedule and a different scope in each jurisdiction, which is why a school reporting an ``extended day'' is answering in its own jurisdiction's category. Census columns: share of primary schools whose expanded enrolment reaches the ",
+    "treatment threshold, in 2022 and 2023. Recording rate: of the schools whose ",
+    "directors report exactly five daily hours in 2023, the share the census also ",
+    "records as extended day. A dash means the qualitative detail was not found, ",
+    "not that the jurisdiction did nothing; both quantitative columns are complete ",
+    "for all 24, so the comparison does not depend on how much documentation each ",
+    "jurisdiction publishes. \\emph{Source} classes the documentary evidence behind ",
+    "the qualitative columns: \\emph{reg.} a provincial or federal regulation, ",
+    "\\emph{gov.} an official communication of the jurisdiction's education ",
+    "authority, \\emph{press} provincial or national press. Misiones and San Luis ",
+    "are the only jurisdictions that did not join, and the only two whose census ",
+    "share does not move."))
+```
+
+```{r}
+#| label: fig-contamination
+#| fig-cap: "What the school census records as an extended day in 2023, by when the school adopted."
+#| out-width: "92%"
+exhibit_fig("08_contamination_2023.png")
+```
+
+```{=latex}
+\fignote{Schools are classified by the daily hours their directors report for grade 6. The pre-2023 stock is almost entirely genuine six-hour extension; the 2023 flow is majority five-hour, and it is the flow that identifies the effect, because a staggered design is built on the schools that switch. Segments too thin to hold a label are read off the vertical axis.}
+```
+
+```{r}
+#| label: tbl-arms
+#| tbl-cap: "Effect on grade-6 achievement by verified daily hours."
+# The combined arm is the headline specification of 06; the two separated arms
+# come from 08. They are shown together because the point of the table is that
+# splitting the recorded category leaves the average where it was.
+if (!is.null(.arm) && !is.null(.m)) {
+  gA <- function(e, s, cv = "none (absorbed)")
+    .m[estimator == e & regime == "combined" & subject == s & covariates == cv]
+  gR <- function(e, a, s) .arm[estimator == e & arm == a & subject == s]
+  arms <- c("genuine 6h+ (stable)", "1h+ 5h (stable)")
+  labs <- c("Combined (all recorded extension)", "Genuine 6h+ extension",
+            "Five-hour day")
+  val <- function(e, s, col) c(
+    if (e == "CDH") gA("CDH (headline)", s)[[col]] else gA("CS (absorbing)", s, "none")[[col]],
+    vapply(arms, function(a) { v <- gR(e, a, s)[[col]]
+      if (length(v) == 0) NA_real_ else v }, numeric(1)))
+  # Three stacked lines per cell: estimate, standard error, N. N cannot be one
+  # column of the table because it differs by estimator as well as by arm -- the
+  # doubly-robust rows run on the absorbing subsample with complete covariates
+  # and so rest on far fewer school-waves than the primary estimator does.
+  cell <- function(e, s) { est <- val(e, s, "att"); se <- val(e, s, "se")
+    n <- val(e, s, "n_obs")
+    as.vector(rbind(ifelse(is.na(est), "--", sprintf("%.3f", est)),
+                    ifelse(is.na(se),  "",   sprintf("(%.3f)", se)),
+                    ifelse(is.na(n),   "",   fmtn(n)))) }
+  tab <- data.table(Arm = as.vector(rbind(labs, "", "")),
+                    a = cell("CDH", "language"), b = cell("CDH", "mathematics"),
+                    c = cell("CS",  "language"), d = cell("CS",  "mathematics"))
+  kbl(tab, booktabs = TRUE, linesep = "", align = c("l", "r", "r", "r", "r"),
+      col.names = c("Verified schedule", "(1)", "(2)", "(3)", "(4)")) |>
+    kable_styling(latex_options = "HOLD_position") |>
+    add_header_above(c(" " = 1, "Language" = 1, "Mathematics" = 1,
+                       "Language" = 1, "Mathematics" = 1)) |>
+    add_header_above(c(" " = 1, "Primary estimator (CDH)" = 2,
+                       "Doubly robust (CS)" = 2)) |>
+    tbl_note(
+      "The arms separate what the census records as extension into genuine six-hour extension and the five-hour day recorded alongside it. Standard errors in parentheses. Outcome in standard-deviation units of the ",
+      "2016 anchored scale. Treatment is the main binary indicator ",
+      "(expanded share $\\\\geq$ 50\\\\% in the year), comparison group not-yet-treated, ",
+      "aggregating the first two post-treatment horizons; variance is the ",
+      "estimator's analytical group-level variance, the group being the school. ",
+      "Province-level and resampled uncertainty for this specification are in ",
+      "the appendix; the two procedures disagree materially and neither is treated ",
+      "as authoritative (\\S7.2). ",
+      "Arms are assigned from the directors' reported grade-6 daily hours, taken ",
+      "at the highest a school ever reports, so the label is time-invariant while ",
+      "the timing of treatment still comes from the census. That rule is ",
+      "consequential and not one-directional: taking the peak lifts a school into ",
+      "the five-hour class from below and out of it from above at once, so ",
+      lr("five-hour under the peak rule"), " schools are classed five-hour under it ",
+      "against ", lr("five-hour under the modal rule"), " under a modal rule and ",
+      lr("five-hour under the last-reported rule"), " under a last-reported one. ",
+      "The contamination shares reported in the text are computed from each wave's ",
+      "own reported hours and are not exposed to this choice. The five-hour arm ",
+      "is compared against untreated schools with no five-hour schools among them. ",
+      "Callaway--Sant'Anna requires absorbing adoption and is fitted on the ",
+      "non-contracting subsample, so columns (3) and (4) rest on a different ",
+      "population. It is not estimated for the five-hour arm because three ",
+      "quarters of that arm adopts in a single wave, leaving its other cohorts ",
+      "too small for the doubly-robust regression each cohort-period cell ",
+      "requires: the dash is a limit of the estimator, not a zero.")
+} else exhibit_tbl("08_arm_results.csv")
+```
+
+## The effect on achievement {#sec-results-headline}
+
+Estimated on the full panel and indexed by assessment wave, the primary estimator returns `r hz(2, "language")` in language and `r hz(2, "mathematics")` in mathematics, in standard-deviation units of the anchored 2016 scale, aggregating the two post-treatment horizons the design supports (Panel A of @tbl-main). Both are small against the regional benchmark of about 0.04 standard deviations at primary level [@alvarez2019], and only the mathematics estimate reaches conventional significance. It does so, however, only in that aggregation window: one horizon gives `r hz(1, "mathematics")` (*t* `r hz(1, "mathematics", col = "t")`) and three give `r hz(3, "mathematics")` (*t* `r hz(3, "mathematics", col = "t")`), because the entire positive sits in the second horizon, which is supported by `r hz_n(2)` switching schools against `r hz_n(1)` at the first.
+
+The window is reported alongside the estimate rather than resolved by choosing one, since moving it after seeing where significance lies would be specification search in reverse. A deeper issue: the index is in waves, and waves are not exposure (@sec-strategy-time). Classifying switchers by the calendar time between their first adoption and the wave at which they are assessed, and estimating each class separately against all never-switching schools, mathematics gives `r pj(0, "mathematics")` for schools assessed in their adoption year, `r pj(1, "mathematics")` at one year and `r pj(2, "mathematics")` at two. No cumulative pattern appears. What the partition establishes is narrower than a dose-response claim: the classes are not the same schools observed at different durations but different schools, differing also in adoption cohort, calendar and composition. The pattern survives the window in which calendar time is fully homogeneous, where the classes give `r pj(0, "mathematics", sp = "1 horizon")`, `r pj(1, "mathematics", sp = "1 horizon")` and `r pj(2, "mathematics", sp = "1 horizon")`.
+
+The class that carries the positive is also the class in which it can least be separated from what preceded it. Its estimated effect is `r pj(0, "mathematics")` and its own pre-treatment placebo is `r pj(0, "mathematics", par = "Placebo_1")` — the same magnitude, on the same schools, before treatment (@tbl-timing-placebo). It is, in addition, the class in which the 2023 adoption cohort is concentrated, while the one-year class contains none of it. Several independent diagnostics therefore locate the fragility in the same cohort and the same window, which is what the data support and is weaker than a claim that the positive estimate and the pre-treatment difference are one phenomenon.
+
+The pooled placebo conceals this rather than contradicting it, and only if one placebo is read where the specification reports two. The first is near zero in both subjects, `r mp("mathematics")` in mathematics and `r mp("language")` in language. The second is `r mp("mathematics", "Placebo_2")` in mathematics (s.e. `r mp("mathematics", "Placebo_2", "se")`), the same estimate as the *k* = −2 lead of @fig-eventstudy: placebos and event-study leads are one diagnostic reported twice, not two that agree. By class the placebos are `r pj(0, "mathematics", par = "Placebo_1")`, `r pj(1, "mathematics", par = "Placebo_1")` and `r pj(2, "mathematics", par = "Placebo_1")`, and their switcher-weighted mean reproduces the pooled value: the class point estimates offset one another. A near-zero pooled placebo therefore averages class estimates of opposite sign rather than showing small pre-treatment differences — cancellation among point estimates, not demonstrated parallel trends.
+
+Three limits qualify it. Partitioning costs precision: the class standard errors are `r pj(1, "mathematics", col = "se")` and `r pj(2, "mathematics", col = "se")` against `r hz(2, "mathematics", col = "se")` pooled, and no class individually excludes the pooled estimate. The classes homogenise calendar time and not years treated (@sec-strategy-time). And none is promoted in place of the pooled coefficient, since choosing after seeing which produces the positive would be an *ex post* choice. What changes is the coefficient's status rather than its value: it is reported with the partition beside it and is not the study's primary result, because an average over materially different distances from adoption cannot be translated back onto a single calendar.
+
+Panel A's third quantity answers a different question rather than checking this one. Weighting by grade-6 enrolment targets the average effect on the pupil rather than on the school — the estimand policy is framed in — and takes mathematics from `r mn("CDH (headline)", "mathematics")` to `r mn("CDH (grade-6-weighted)", "mathematics")`, the two estimator families agreeing once weighted (@tbl-main). A per-school effect does not carry over proportionally to the per-pupil parameter, and that is not evidence of larger effects in small schools: weighting re-weights size, rurality, composition, province and adoption cohort at once.
+
+Fixing the set of switchers across horizons moves it the other way — mathematics rises to `r opt("2 horizons, same switchers", "mathematics")` — but is not promoted either: that population is selected by its capacity to sustain a second horizon, and its placebo rises in step.
+
+```{r}
+#| label: tbl-main
+#| tbl-cap: "Effect of extended-day operation on grade-6 achievement."
+# Panel A: the pooled specification, the same estimand partitioned by time since
+# first adoption, and the pupil-average re-weighting. Panel B: four estimators on
+# the common sample of 11b. Standard errors in parentheses. The three tables are
+# read in the setup chunk, because the prose quotes them before the table runs.
+
+# Estimate over its standard error, as two stacked rows, in the applied-micro
+# convention. `key` names the row block so the panels can be assembled by label.
+coef_block <- function(labels, est, se, extra = NULL) {
+  out <- data.table(Specification = as.vector(rbind(labels, "")),
+                    Language      = as.vector(rbind(sprintf("%.3f", est$lang),
+                                                    sprintf("(%.3f)", se$lang))),
+                    Mathematics   = as.vector(rbind(sprintf("%.3f", est$math),
+                                                    sprintf("(%.3f)", se$math))))
+  if (!is.null(extra)) out <- cbind(out[, 1], extra, out[, 2:3])
+  out
+}
+
+pick <- function(dt, ...) { r <- dt[...]; setNames(r$att, r$subject) }
+
+if (!is.null(.m) && !is.null(.pj) && !is.null(.lf)) {
+  gA <- function(e, s) .m[estimator == e & regime == "combined" & subject == s]
+  gJ <- function(x, s, p) .pj[definition == "main" & spec == PJ_WINDOW &
+                              exposure_years == x & subject == s & parameter == p]
+
+  labsA <- c("Pooled, two horizons",
+             "  Adoption year", "  One year", "  Two years",
+             "Pupil-weighted (grade-6 enrolment)")
+  estA <- list(
+    lang = c(gA("CDH (headline)", "language")$att,
+             sapply(0:2, function(x) gJ(x, "language", "ATE")$estimate),
+             gA("CDH (grade-6-weighted)", "language")$att),
+    math = c(gA("CDH (headline)", "mathematics")$att,
+             sapply(0:2, function(x) gJ(x, "mathematics", "ATE")$estimate),
+             gA("CDH (grade-6-weighted)", "mathematics")$att))
+  seA <- list(
+    lang = c(gA("CDH (headline)", "language")$se,
+             sapply(0:2, function(x) gJ(x, "language", "ATE")$se),
+             gA("CDH (grade-6-weighted)", "language")$se),
+    math = c(gA("CDH (headline)", "mathematics")$se,
+             sapply(0:2, function(x) gJ(x, "mathematics", "ATE")$se),
+             gA("CDH (grade-6-weighted)", "mathematics")$se))
+  A <- coef_block(labsA, estA, seA)
+
+  ord <- c("CDH (did_multiplegt_dyn)", "Callaway-Sant'Anna",
+           "FEct (FE imputation)", "FEct (interactive FE)", "TWFE")
+  gL <- function(e, s) .lf[estimator == e & subject == s]
+  B <- coef_block(ord,
+    list(lang = sapply(ord, function(e) gL(e, "language")$att),
+         math = sapply(ord, function(e) gL(e, "mathematics")$att)),
+    list(lang = sapply(ord, function(e) gL(e, "language")$se),
+         math = sapply(ord, function(e) gL(e, "mathematics")$se)),
+    extra = data.table(`Counterfactual trend` =
+      as.vector(rbind(sapply(ord, function(e) gL(e, "language")$counterfactual_trend), ""))))
+  A[, `Counterfactual trend` := ""]
+  setcolorder(A, names(B))
+
+  tab <- rbind(A, B)
+  kbl(tab, booktabs = TRUE, linesep = "", align = c("l", "l", "r", "r"),
+      col.names = c("Specification", "Counterfactual trend", "Language", "Mathematics")) |>
+    kable_styling(latex_options = c("HOLD_position")) |>
+    pack_rows("Panel A. Primary estimator", 1, nrow(A)) |>
+    pack_rows("Panel B. Estimator comparison, common sample", nrow(A) + 1, nrow(tab)) |>
+    tbl_note(paste0(
+      "Standard errors in parentheses. Estimator: de Chaisemartin--D'Haultf\\\\oe uille ",
+      "\\\\texttt{did\\\\_multiplegt\\\\_dyn} unless stated. Variance is the estimator's ",
+      "analytical group-level variance; the group is the school. Panel A aggregates ",
+      "the first two post-treatment horizons on the full estimation sample of ",
+      n_sch, " schools and ", n_sw, " school-waves; its indented rows partition ",
+      "switchers by time since first adoption and estimate each class separately ",
+      "against all never-switching schools, so they are not pooled with one another. ",
+      "Panel B aggregates three horizons on the non-reverting subsample, the window ",
+      "and sample that make the estimators comparable at matched event times; that ",
+      "difference in window, not a conflict, is why its first row differs from the ",
+      "pooled row above. Panel B rows are not estimates of a common parameter on an ",
+      "identical population -- Callaway--Sant'Anna requires absorbing adoption, and ",
+      "the estimators differ in the counterfactual trend they assume -- so agreement ",
+      "or disagreement between them is suggestive rather than a specification test."))
+} else {
+  kbl(data.frame(Status = "exhibit pending: 06_estimation_main.csv / 06j / 11b"),
+      booktabs = TRUE, linesep = "")
+}
+```
+
+```{r}
+#| label: tbl-timing-placebo
+#| tbl-cap: "Post-treatment effect and the corresponding pre-treatment placebo, by time since first adoption."
+# The identification argument in one exhibit: wherever a positive effect appears,
+# the placebo of the same specification is of comparable size. Effects repeat the
+# indented rows of Panel A of @tbl-main; they are shown again because the pairing,
+# not either column alone, is what the table is for.
+if (!is.null(.pj)) {
+  g <- function(x, s, p) .pj[definition == "main" & spec == PJ_WINDOW &
+                             exposure_years == x & subject == s & parameter == p]
+  labs <- c("Adoption year", "One year", "Two years")
+  cell <- function(s, p) as.vector(rbind(
+    sapply(0:2, function(x) sprintf("%.3f", g(x, s, p)$estimate)),
+    sapply(0:2, function(x) sprintf("(%.3f)", g(x, s, p)$se))))
+  tab <- data.table(
+    `Time since first adoption` = as.vector(rbind(labs, "")),
+    `Effect`  = cell("language", "ATE"),      `Placebo` = cell("language", "Placebo_1"),
+    `Effect ` = cell("mathematics", "ATE"),   `Placebo ` = cell("mathematics", "Placebo_1"))
+  kbl(tab, booktabs = TRUE, linesep = "", align = c("l", "r", "r", "r", "r"),
+      col.names = c("Time since first adoption", "Effect", "Placebo", "Effect", "Placebo")) |>
+    kable_styling(latex_options = c("HOLD_position")) |>
+    add_header_above(c(" " = 1, "Language" = 2, "Mathematics" = 2)) |>
+    tbl_note(paste0(
+      "Standard errors in parentheses. Each class is estimated separately against all ",
+      "never-switching schools and aggregates the first two post-treatment horizons; ",
+      "classes are not pooled with one another. The placebo is the estimator's own ",
+      "pre-treatment coefficient for the same specification. Classes are defined by ",
+      "time since the first adoption, which in a non-absorbing design is not the same ",
+      "as years actually treated; see the discussion of event time in the empirical ",
+      "strategy. Under the pooled specification ",
+      "the placebo is small in both subjects; that value is the switcher-weighted mean ",
+      "of the three shown here, whose signs differ."))
+} else {
+  kbl(data.frame(Status = "exhibit pending: 06j_exposure_partition.csv"),
+      booktabs = TRUE, linesep = "")
+}
+```
+
+## What the diagnostics show, and why the estimators disagree {#sec-results-diagnosis}
+
+What follows is evidence on observed pre-treatment differences, not on the assumption itself: parallel trends concerns a counterfactual path that is never observed, so a placebo that fails to reject does not establish it, and one that rejects establishes only prior divergence. Three problems are kept apart: the population identifying each horizon changes (@sec-results-headline); a significant placebo is direct evidence of differential trends; and the tests have limited power, so a small placebo with a wide interval does not separate absence from imprecision — a caution the estimator's own authors repeat about these placebos, which may fail to detect violations large enough to bias the estimates [@roth2022; @dechaisemartindyn2026].
+
+The event study of the primary estimator (@fig-eventstudy) carries the direct evidence. In mathematics the second lead is `r es(-2, "Mathematics")`, excluding zero under the estimator's default variance and of the same order as any effect estimated in this study, while the lead immediately before adoption is `r es(-1, "Mathematics")` and does not reject; language gives `r es(-2, "Language")` and `r es(-1, "Language")`, neither distinguishable from zero.
+
+Two explanations for that lead can be ruled out. It is not composition: contemporaneous controls leave it at `r esx(-2, "Mathematics", "composition-controlled")` and baseline covariates in the doubly-robust estimator at `r esc(-2, "Mathematics", sp = "baseline-covariates")`. Nor is it the score scale, a reasonable suspicion given the documented uncertainty about the 2021 equating (@sec-data-out): standardising within wave, which is immune to scale drift, takes the same placebo from `r sc("Mathematics", "anchored /100")` to `r sc("Mathematics", "within-wave z")`. What remains is identification.
+
+```{r}
+#| label: fig-eventstudy
+#| fig-cap: "Event-study estimates from the primary estimator."
+exhibit_fig("07_event_study_cdh.png")
+```
+
+```{=latex}
+\fignote{Points are the ATT at each event time in assessment waves, with 95\% confidence bands; the number of switching schools identifying each post-treatment horizon is printed under its tick, and it collapses as the horizon grows. Mathematics shows one placebo excluding zero, at the second lead, of the same order as any effect estimated in this study; language shows none at either lead. Leads are evidence on observed pre-treatment differences, not on parallel trends, which concerns a counterfactual path that is never observed.}
+```
+
+A second symptom points the same way. The sign of the effect is not robust to the model assumed for the counterfactual trend: on the common sample of Panel B of @tbl-main the primary estimator gives `r lf("CDH (did_multiplegt_dyn)", "mathematics")` in mathematics and the doubly-robust one `r lf("Callaway-Sant'Anna", "mathematics")`, both positive, while the imputation estimator [@liu2024] gives `r lf("FEct (FE imputation)", "mathematics")` and two-way fixed effects `r lf("TWFE", "mathematics")`, both negative and, with dependence allowed only within school, both distinguishable from zero — a precision that province-level resampling substantially weakens (@sec-rob-sensitivity).
+
+Carryover and reversal are ruled out as explanations: both leave the disagreement in place (@tbl-app-carryover).
+
+What remains is the counterfactual trend each family imposes, the column Panel B reports. The primary and doubly-robust estimators build local comparisons against not-yet-treated schools; the imputation and fixed-effects estimators impose one common set of time effects on every school. Where treated and comparison schools follow different paths, that restriction is false, and the estimators relying on it record the difference as a negative effect.
+
+The two symptoms have one source, and it is narrower than the design as a whole. By adoption cohort (@tbl-decomp) the pre-treatment placebo is `r cd(2023)` for the 2023 cohort and small and insignificant for every other, and that cohort's last untreated observation is the 2021 post-pandemic wave. Excluding the cohort resolves several apparently separate symptoms at once: the imputation estimator's joint pre-treatment test stops rejecting in both subjects, in mathematics from *p* = `r sg("full", "mathematics", "pretrend_f_p")` to `r sg("excl. 2023 cohort", "mathematics", "pretrend_f_p")`; its estimates move to `r sg("excl. 2023 cohort", "language")` and `r sg("excl. 2023 cohort", "mathematics")`, neither distinguishable from zero; the mathematics second lead falls to `r cvr("exclude 2023 cohort (full waves)", "math_k2")`, no longer significant; and in language the three families agree. The mechanism is not established — the pandemic, changes in the assessment, uneven recovery and the federal programme are all consistent with it. What is established is that the concern is localised to one comparison rather than being a uniform divergence.
+
+```{r}
+#| label: tbl-decomp
+#| tbl-cap: "The mathematics pre-treatment placebo by adoption cohort."
+# Only the k = -2 row of the group-time decomposition, and only mathematics: the
+# table exists to locate one placebo, not to reproduce the event study.
+.cd <- read_out("07b_cohort_decomposition.csv")
+if (!is.null(.cd)) {
+  z <- .cd[k == -2 & subject == "mathematics"][order(g_year)]
+  tab <- data.table(`Adoption cohort` = as.vector(rbind(as.character(z$g_year), "")),
+                    Comparison = as.vector(rbind(sprintf("%d to %d", z$t_year, z$g_year), "")),
+                    Placebo    = as.vector(rbind(sprintf("%.3f", z$att),
+                                                 sprintf("(%.3f)", z$se))))
+  kbl(tab, booktabs = TRUE, linesep = "", align = c("l", "l", "r")) |>
+    kable_styling(latex_options = c("HOLD_position")) |>
+    tbl_note(paste0(
+      "Each row is a group-time estimate two periods before adoption, so the comparison years that produce it are named alongside it: the cohort carrying the placebo is the one whose last untreated comparison spans the 2021 post-pandemic wave. Standard errors in parentheses. Callaway--Sant'Anna group-time estimates on the ",
+      "absorbing subsample, mathematics, at the second pre-treatment period. Cohorts are ",
+      "dated by the first wave at which a school is observed treated, so the comparison ",
+      "column gives the two assessment years the estimate differences. The 2022 cohort is ",
+      "small because only schools drawn into the 2022 sample wave can belong to it."))
+} else {
+  kbl(data.frame(Status = "exhibit pending: 07b_cohort_decomposition.csv"),
+      booktabs = TRUE, linesep = "")
+}
+```
+
+In mathematics the families do not converge. The doubly-robust estimator stays at `r cvr("exclude 2023 cohort (full waves)", "cs_math")` while the other two sit near zero, so the cohort accounts for the pre-treatment symptoms and for the language disagreement but not for the residual dispersion in mathematics. That dispersion has a separate and measured explanation: the doubly-robust estimator runs on the absorbing subsample, which discards the schools that contract, and those are systematically larger, so its population is tilted towards smaller schools. Weighting by enrolment closes the gap (@sec-results-headline), which is what a difference driven by the composition of the sample rather than by the counterfactual trend should do.
+
+Language is not the clean case by contrast: on the absorbing subsample the doubly-robust estimator excludes zero at its two most distant leads. Mathematics shows a differential trend close to adoption and localised to one cohort, language one only at distant leads and under another estimator; neither pre-treatment trajectory can be called parallel.
+
+The full-day estimate, which would otherwise look strongest — mathematics `r hz(2, "mathematics", rg = "full-day")`, stable across windows — is rejected by its own first placebo, significant and larger than the effect it precedes, and so is not read causally; in language the full-day placebo is null. How large a violation would overturn the remaining estimates is taken up in @sec-rob-sensitivity, where bounds [@rambachan2023] exist only for the doubly-robust estimator.
+
+Two limits qualify the diagnostic. Excluding the cohort changes the estimand: it removes the largest single source of identifying variation, `r 100 - as.numeric(ivr("observed_0to1"))`% of all observed adoptions, so it is a probe and no estimate is reported on that sample as a primary estimate. And the convergence is not merely the loss of variation that would make any two estimators agree: the exclusion retains `r ivr("schools")`% of schools and `r hz_ret(1)`% and `r hz_ret(2)`% of the switchers supporting the first two horizons (@tbl-app-idvar).
+
+## What the estimates support {#sec-results-verdict}
+
+One pattern orders the chapter. Wherever a positive estimate of relevant magnitude appears, the placebo of the same specification reports a pre-treatment difference at least as large: `r hz(2, "mathematics")` against `r mp("mathematics", "Placebo_2")` in the pooled specification itself, `r pj(0, "mathematics")` against `r pj(0, "mathematics", par = "Placebo_1")` in the class assessed in the adoption year, `r opt("2 horizons, same switchers", "mathematics")` against `r opt("2 horizons, same switchers", "mathematics", par = "Placebo_1")` on the common set of switchers, and `r hz(2, "mathematics", rg = "full-day")` against `r hz(2, "mathematics", par = "Placebo_1", rg = "full-day")` in the full-day arm. The comparison is like for like by construction: this estimator's placebos mirror its post-treatment estimators, contrasting the same switchers against the same comparison group before adoption [@dechaisemartindyn2026]. This is the sensitivity analysis available for the primary estimand, and it is a diagnostic one rather than a formal bound: departures from parallel trends no larger than those already visible before treatment would suffice to account for the positive estimates. It is not a robust confidence set, and placebos estimate pre-treatment differences rather than post-treatment bias, so it is not a claim that each positive estimate *is* biased.
+
+Every positive estimate reaching conventional significance here is in mathematics; none is in language, and they do not fail in the same way, which is why they are separated rather than counted. The pooled estimate fails twice: its significance exists only in the two-horizon window and re-weighting to the pupil removes it (@sec-results-headline), and its own second placebo is significant and larger than the effect it precedes. The full-day arm survives both perturbations and fails on the diagnostic alone (@sec-results-diagnosis). The doubly-robust estimate reaches conventional significance only without covariates, at `r mn("CS (absorbing)", "mathematics", cov = "none")` (s.e. `r mn("CS (absorbing)", "mathematics", "se", cov = "none")`): conditioning on the baseline covariates takes it to `r mn("CS (absorbing)", "mathematics", cov = "composition")`, re-weighting to the pupil to `r mn("CS (grade-6-weighted)", "mathematics", cov = "composition")`, and clustering that specification at the province raises its standard error from `r cl("CS (robustness)", "mathematics", "school")` to `r cl("CS (robustness)", "mathematics", "province")`.
+
+What the data support is therefore a conclusion rather than a coefficient: there is no robustly identified evidence that the expansion of the school day raised grade-6 achievement in mathematics or language. That is not the claim that the effect is zero. Across estimator families on the common sample the union of the 95% intervals runs from `r uni("lo")` to `r uni("hi")` standard deviations, which contains effects that would matter for policy in either direction, and the design cannot exclude them. Conventional significance thresholds do no adjudicating work in that conclusion, and could not: with `r n_prov` unequal jurisdictions and an effective number near `r eff_sw`, analytic and resampled province-level uncertainty differ materially for every estimator admitting both, so which side of a threshold an estimate falls on is a property of the procedure as much as of the data. One design condition for reading a repeated cross-section this way is met: grade progression, measured annually in the census with twelve pre-treatment periods, does not move under treatment (Appendix C), so the pool of pupils sitting the assessment is not being reconfigured.
+
+## Heterogeneity by socioeconomic disadvantage {#sec-results-hetero}
+
+The dimensions were fixed before results were examined, with one confirmatory hypothesis — that effects are larger in more disadvantaged schools — and the remainder descriptive. Because the average effect is not robustly identified, subgroup estimates inherit that problem and are compounded by it, since every split reduces the number of identifying treatment changes; they are reported as exploratory.
+
+The direction predicted does appear, in two measures built from different sources (@fig-hetero). On the assessment's own socioeconomic index the mathematics gradient is monotone, from `r het("SES tercile", 1, "mathematics")` in the lowest tercile to `r het("SES tercile", 3, "mathematics")` in the highest, and it survives the diagnostic exclusion of the 2023 cohort. On the official vulnerability quartile the pattern is not a gradient but a detached first quartile: mathematics is `r het("context quartile", 1, "mathematics")` in the most disadvantaged quartile against `r het("context quartile", 2, "mathematics")`, `r het("context quartile", 3, "mathematics")` and `r het("context quartile", 4, "mathematics")` in the other three. That pattern is not the 2023 artefact: excluding the cohort widens the gap between the extreme quartiles from `r itx("mathematics", "Q1 vs Q4", col = "diff")` to `r itx("mathematics", "Q1 vs Q4", "excl. 2023 cohort", col = "diff")` rather than closing it. Neither contrast is significant at conventional levels in either subject, on either sample (*p* = `r itx("mathematics", "Q1 vs Q4")` and `r itx("mathematics", "Q1 vs Q4", "excl. 2023 cohort")` in mathematics).
+
+Estimates by region are reported with their identifying support rather than interpreted: the Northeast, which carries the mathematics pre-treatment concern of @sec-results-diagnosis, rests on `r hetn("region", "NEA", "mathematics")` switching schools in the first horizon. What the analysis shows is a compensatory *pattern in the point estimates*, consistent across two measures and marginal in every test of it, and not a compensatory effect.
+
+```{r}
+#| label: fig-hetero
+#| fig-cap: "Estimated effects by subgroup, split-sample."
+exhibit_fig("10_heterogeneity.png")
+```
+
+```{=latex}
+\fignote{Bars are 95\% confidence intervals. Each panel is one pre-specified dimension; the split is made on the full estimation sample and each subgroup is estimated separately with the primary estimator, so the intervals are not adjusted for multiple comparisons. Because the average effect is not robustly identified, these are point estimates and not causal claims; the switcher counts supporting each cell are in the heterogeneity grid of Appendix C.}
+```
+
+# Robustness and sensitivity {#sec-robustness}
+
+## Robustness: alternative implementations {#sec-rob-implement}
+
+The tables carry the grid; the prose explains only the checks that change how the result is read. Nothing in how the treatment is defined does: `r n_treatdef` constructions of the binary indicator hold the same sign and order of magnitude in both subjects, with the primary estimate at the bottom of the range the cut-offs span and each paired with its own placebo (@tbl-rob-treatdef). The cut-off does little work because the share is close to dichotomous at 0 and 1, so a line at 50% sits in a sparse region.
+
+The outcome scale, the never-treated comparison group and the socioeconomic covariate leave the estimates where they are (@tbl-rob-specs). The comparison group leaves the pre-treatment difference where it is as well: restricting the controls to schools that never switch reproduces the primary specification's second placebo almost exactly, `r plc("CDH (never-switchers)", "combined", "mathematics", k = 2)` against `r plc("CDH (headline)", "combined", "mathematics", k = 2)` in mathematics, so it is not an independently clean specification but the same one seen against a different control pool. One choice does not leave them there, and it moves the two subjects in opposite directions: restricting to schools where grade-6 exposure is arithmetically certain takes language from `r ga("full", "Language")` to `r ga("grade-6-certain", "Language")` and mathematics from `r ga("full", "Mathematics")` to `r ga("grade-6-certain", "Mathematics")`.
+
+Wave composition is the one that does change the reading, and it is diagnostic rather than robustness (@tbl-rob-covid): dropping a wave re-dates adoption and, because event time is indexed in waves, re-spaces it. Removing the 2022 sample wave turns the primary estimator negative in both subjects, to `r cvr("drop 2022 (sample wave)", "cdh_lang")` and `r cvr("drop 2022 (sample wave)", "cdh_math")`; removing the pandemic-disrupted waves takes mathematics to `r cvr("drop 2021+2022 (COVID period)", "cdh_math")`. A re-spaced event time estimates a different parameter, so neither overturns the estimates — but both establish that the positive sign rests on a six-wave structure containing a sample wave. Deleting waves does not address the pandemic either: it enlarges the very cohort whose untreated comparison spans the recovery, which is why no explicit pandemic control is used.
+
+```{r}
+#| label: tbl-rob-treatdef
+#| tbl-cap: "Treatment definition."
+# Each row pairs the effect with BOTH placebos of the SAME specification, because
+# the cut-off moves a school's adoption date and therefore moves all three. The
+# second placebo is the one that matters: for the headline it is the second, not
+# the first, that rejects, so a grid showing only the first would clear every
+# cut-off on half its pre-treatment evidence -- which is what this table did until
+# 04 was corrected to request every placebo the window admits.
+if (!is.null(.th)) {
+  ord <- c("any (>0)", "0.40", "0.50 (headline)", "0.60", "0.75 (data valley)")
+  labs <- c("Any expanded share ($>$ 0)", "Share $\\geq$ 40\\%",
+            "Share $\\geq$ 50\\% (headline)", "Share $\\geq$ 60\\%",
+            "Share $\\geq$ 75\\%")
+  g <- function(tr, s) .th[threshold == tr & subject == s]
+  cell <- function(s, e, v) as.vector(rbind(
+    vapply(ord, function(tr) sprintf("%.3f", g(tr, s)[[e]]), character(1)),
+    vapply(ord, function(tr) sprintf("(%.3f)", g(tr, s)[[v]]), character(1))))
+  tab <- data.table(
+    Definition = as.vector(rbind(labs, "")),
+    Switchers  = as.vector(rbind(vapply(ord, function(tr)
+                   fmtn(g(tr, "mathematics")$switchers1), character(1)), "")),
+    a = cell("language",    "att",      "se"),
+    b = cell("language",    "placebo1", "placebo1_se"),
+    c = cell("language",    "placebo2", "placebo2_se"),
+    d = cell("mathematics", "att",      "se"),
+    e = cell("mathematics", "placebo1", "placebo1_se"),
+    f = cell("mathematics", "placebo2", "placebo2_se"))
+  kbl(tab, booktabs = TRUE, linesep = "", escape = FALSE,
+      align = c("l", "r", rep("r", 6)),
+      col.names = c("Treatment definition", "Switchers",
+                    "(1)", "(2)", "(3)", "(4)", "(5)", "(6)")) |>
+    kable_styling(latex_options = "HOLD_position", font_size = 9) |>
+    add_header_above(c(" " = 2, "Effect" = 1, "Placebo 1" = 1, "Placebo 2" = 1,
+                       "Effect" = 1, "Placebo 1" = 1, "Placebo 2" = 1)) |>
+    add_header_above(c(" " = 2, "Language" = 3, "Mathematics" = 3)) |>
+    tbl_note(
+      "The primary estimator re-run under alternative cut-offs, each paired with both pre-treatment placebos of the same specification. Standard errors in parentheses. Outcome in standard-deviation units of the ",
+      "2016 anchored scale. Estimator: de Chaisemartin--D'Haultf\\\\oe uille ",
+      "\\\\texttt{did\\\\_multiplegt\\\\_dyn} throughout, deliberately: moving the cut-off ",
+      "moves a school's adoption date, which a design without event time cannot ",
+      "detect. Comparison group not-yet-treated, aggregating the first two ",
+      "post-treatment horizons, variance analytical at the school. The placebos are ",
+      "the estimator's own first and second pre-treatment coefficients for the same ",
+      "specification; the design admits two, and reading only the first would clear ",
+      "each cut-off on half its pre-treatment evidence. In mathematics the second ",
+      "exceeds the effect it precedes at every cut-off. ",
+      "The switcher count is the mathematics sample at the first horizon; the ",
+      "language count differs by at most a dozen schools. Every row is a ",
+      "contemporaneous binary indicator on the expanded share, built the same ",
+      "way as the headline, so the grid varies coverage alone.")
+} else exhibit_tbl("04_threshold_sensitivity_cdh.csv")
+```
+
+```{r}
+#| label: tbl-rob-specs
+#| tbl-cap: "Full specification grid: estimators, regimes, covariate sets and the enrolment-weighted estimand."
+# Panelled by estimator family rather than listed flat, because the families do
+# not estimate a common parameter on an identical population and a flat list
+# invites reading down the column as if they did.
+if (!is.null(.m)) {
+  spec <- list(
+    A = list(c("CDH (headline)", "combined", "none (absorbed)", "Headline: main binary, not-yet-treated"),
+             c("CDH (headline)", "full-day", "none (absorbed)", "Full-day only"),
+             c("CDH (never-switchers)", "combined", "none (absorbed)", "Never-treated comparison group"),
+             c("CDH (grade-6-weighted)", "combined", "none (absorbed)", "Weighted by grade-6 enrolment (pupil-average estimand)")),
+    B = list(c("CS (absorbing)", "combined", "none", "No covariates"),
+             c("CS (absorbing)", "combined", "structural", "Structural covariates"),
+             c("CS (absorbing)", "combined", "none (comp-sample)", "No covariates, common sample"),
+             c("CS (absorbing)", "combined", "composition", "Composition covariates"),
+             c("CS (grade-6-weighted)", "combined", "composition", "Weighted by grade-6 enrolment (pupil-average estimand)")),
+    C = list(c("TWFE (benchmark)", "combined", "none (absorbed)", "Two-way fixed effects")))
+  row1 <- function(r) {
+    g <- function(s) .m[estimator == r[1] & regime == r[2] & subject == s &
+                        covariates == r[3]]
+    num <- function(v) if (length(v) == 0 || is.na(v)) NA_real_ else v
+    list(lab = r[4], n = num(g("mathematics")$n_schools),
+         el = num(g("language")$att),    sl = num(g("language")$se),
+         em = num(g("mathematics")$att), sm = num(g("mathematics")$se))
+  }
+  blk <- function(rs) {
+    z <- lapply(rs, row1)
+    data.table(
+      Specification = as.vector(rbind(vapply(z, `[[`, character(1), "lab"), "")),
+      Schools = as.vector(rbind(
+        vapply(z, function(x) if (is.na(x$n)) "" else fmtn(round(x$n)), character(1)),
+        rep("", length(z)))),
+      Language = as.vector(rbind(
+        vapply(z, function(x) if (is.na(x$el)) "--" else sprintf("%.3f", x$el), character(1)),
+        vapply(z, function(x) if (is.na(x$sl)) "" else sprintf("(%.3f)", x$sl), character(1)))),
+      Mathematics = as.vector(rbind(
+        vapply(z, function(x) if (is.na(x$em)) "--" else sprintf("%.3f", x$em), character(1)),
+        vapply(z, function(x) if (is.na(x$sm)) "" else sprintf("(%.3f)", x$sm), character(1)))))
+  }
+  A <- blk(spec$A); B <- blk(spec$B); C <- blk(spec$C)
+  tab <- rbind(A, B, C)
+  kbl(tab, booktabs = TRUE, linesep = "", align = c("l", "r", "r", "r"),
+      col.names = c("Specification", "Schools", "(1)", "(2)")) |>
+    kable_styling(latex_options = "HOLD_position", font_size = 10) |>
+    add_header_above(c(" " = 2, "Language" = 1, "Mathematics" = 1)) |>
+    pack_rows("Panel A. Primary estimator (CDH)", 1, nrow(A)) |>
+    pack_rows("Panel B. Doubly robust (Callaway--Sant'Anna), absorbing subsample",
+              nrow(A) + 1, nrow(A) + nrow(B), escape = FALSE) |>
+    pack_rows("Panel C. Benchmark", nrow(A) + nrow(B) + 1, nrow(tab)) |>
+    tbl_note(
+      "Standard errors in parentheses, N (school-waves) beneath them. Outcome in ",
+      "standard-deviation units of the ",
+      "2016 anchored scale. Unless a row states otherwise: the main binary ",
+      "treatment (expanded share $\\\\geq$ 50\\\\% in the year), not-yet-treated ",
+      "comparison group, unweighted school means, first two post-treatment ",
+      "horizons, variance analytical at the school. Panel B is ",
+      "fitted on the subsample that never contracts, which the estimator's ",
+      "absorbing-adoption assumption requires, so its schools are not the schools ",
+      "of Panel A; the school count is blank where the estimator does not report ",
+      "one. Baseline covariates appear only in Panel B because the primary ",
+      "estimator differences within school, so a time-invariant covariate has ",
+      "$\\\\Delta X = 0$ and drops out. Two-way fixed effects is reported as a ",
+      "benchmark and is not expected to identify the estimand. Weighting re-targets ",
+      "the estimand from the school to the pupil and is not a robustness check; the ",
+      "primary-enrolment weights give the same answer as the grade-6 weights shown ",
+      "here, and are in the committed output rather than in this table.")
+} else exhibit_tbl("06_estimation_main.csv")
+```
+
+```{r}
+#| label: tbl-rob-covid
+#| tbl-cap: "Wave composition."
+# The primary estimator reports no standard error in this output, so its columns
+# carry the point estimate alone and the note says so rather than leaving the
+# reader to infer that the parentheses were forgotten.
+if (!is.null(.cvr)) {
+  ord <- c("full (6 waves, headline)", "drop 2021 (COVID trough)",
+           "drop 2021+2022 (COVID period)", "drop 2022 (sample wave)",
+           "exclude 2023 cohort (full waves)")
+  labs <- c("Full panel (six waves, headline)", "Drop 2021 (pandemic trough)",
+            "Drop 2021 and 2022 (pandemic period)", "Drop 2022 (sample wave)",
+            "Exclude the 2023 adoption cohort")
+  g <- function(sp) .cvr[spec == sp]
+  pt <- function(col) vapply(ord, function(sp) {
+    v <- g(sp)[[col]]; if (length(v) == 0 || is.na(v)) "--" else sprintf("%.3f", v) },
+    character(1))
+  pair <- function(e, v) as.vector(rbind(pt(e), vapply(ord, function(sp) {
+    x <- g(sp)[[v]]; if (length(x) == 0 || is.na(x)) "" else sprintf("(%.3f)", x) },
+    character(1))))
+  tab <- data.table(
+    Sample = as.vector(rbind(labs, "")),
+    Waves  = as.vector(rbind(vapply(ord, function(sp)
+               as.character(length(strsplit(g(sp)$waves, ",")[[1]])), character(1)), "")),
+    a = as.vector(rbind(pt("cdh_lang"), "")),
+    b = as.vector(rbind(pt("cdh_math"), "")),
+    c = pair("cs_lang", "cs_lang_se"),
+    d = pair("cs_math", "cs_math_se"))
+  kbl(tab, booktabs = TRUE, linesep = "", align = c("l", "r", "r", "r", "r", "r"),
+      col.names = c("Wave composition", "Waves", "(1)", "(2)", "(3)", "(4)")) |>
+    kable_styling(latex_options = "HOLD_position") |>
+    add_header_above(c(" " = 2, "Language" = 1, "Mathematics" = 1,
+                       "Language" = 1, "Mathematics" = 1)) |>
+    add_header_above(c(" " = 2, "Primary estimator (CDH)" = 2,
+                       "Doubly robust (CS)" = 2)) |>
+    tbl_note(
+      "The primary and doubly-robust estimators re-run dropping the pandemic-disrupted waves, dropping the 2022 sample wave, and excluding the 2023 adoption cohort. Outcome in standard-deviation units of the 2016 anchored scale. Standard ",
+      "errors in parentheses for columns (3) and (4); columns (1) and (2) report ",
+      "the point estimate only, which is what the saved output carries. ",
+      "Contemporaneous binary treatment, not-yet-treated comparison group, first ",
+      "two post-treatment horizons. \\\\emph{These rows are diagnostics, not ",
+      "preferred specifications.} Dropping a wave re-dates adoption and, because ",
+      "event time is indexed in waves, re-spaces it, so each row estimates a ",
+      "different parameter from the one above it; excluding the 2023 cohort ",
+      "removes the largest single source of identifying variation. Neither ",
+      "overturns the headline, and neither is reported as an estimate of it.")
+} else exhibit_tbl("06c_covid_robustness.csv")
+```
+
+## Sensitivity to the identifying assumptions {#sec-rob-sensitivity}
+
+Not whether the answer depends on implementation choices, but how large a violation of the identifying assumption would overturn it.
+
+Clustering at the province returns smaller analytic standard errors for the primary estimator than clustering at the school in `r shrink_n` of the `r shrink_of` reported cells — `r cl("CDH (primary)", "mathematics", "province")` against `r cl("CDH (primary)", "mathematics", "school")` for the pooled mathematics estimate. The `r num_word(shrink_of - shrink_n)` cells that move the other way are both in mathematics: the first post-treatment horizon and the most distant placebo. That is not by itself inconsistent with cluster-robust variance estimation: the formula sums group-level contributions within a province before squaring them, so contributions that offset can lower the estimate, and no result guarantees that coarser clusters give larger errors. What the shrinkage puts in doubt is the approximation, not the level, because the effective provincial support is small. Resampling at that level returns materially larger errors — `r cb("mathematics", "ATE", "se_boot_package")` against the analytic `r cb("mathematics", "ATE", "se_province")` for the pooled mathematics estimate — and the disagreement is large enough to matter: the same point estimate carries *t* = `r cbt("mathematics", "ATE", "se_province")` analytically and *t* = `r cbt("mathematics", "ATE")` under the bootstrap. The mathematics second placebo moves the same way, from *t* = `r cbt("mathematics", "Placebo_2", "se_school")` to `r cbt("mathematics", "Placebo_2")`. Effect and placebo lose conventional significance together, which is why the diagnostic of @sec-results-verdict compares magnitudes and not significance, and why neither procedure is treated as the authoritative one.
+
+Formal Rambachan–Roth bounds [@rambachan2023] are reported only for the doubly-robust estimator, which produces the absorbing-adoption event study the method was built for, and they pertain only to its own estimand on that subsample: they do not validate the primary estimates, whose sensitivity is the diagnostic comparison of @sec-results-verdict. Two reasons keep the method off the primary estimator, the first sufficient on its own. The joint covariance matrix of effects and placebos that the command returns is not positive semi-definite, its smallest eigenvalue being `r min_eig` — material rather than numerical, and repairing it to force the procedure through would manufacture the validity the diagnostic denies. The second is interpretive: event time is indexed by assessment waves spanning between `r wave_gap_lo` and `r wave_gap_hi` years, so a bound relating post-treatment violations to the largest pre-treatment one would carry no homogeneous temporal meaning. In `r num_word(hd_n_at(0.5))` of the four specifications the robust set already covers zero at $\bar{M}=`r hd_zero("language")`$, a post-treatment violation half the size of the largest observed pre-treatment one; uncontrolled mathematics is the exception, first covering zero at $\bar{M}=`r hd_zero("mathematics")`$. Neither is a violation the pre-treatment evidence rules out, so the localised feature of @sec-results-diagnosis surfaces as formal sensitivity rather than unexplained width. An equivalence test tells the same story from the other side: it asks whether pre-treatment effects lie inside a pre-specified bound rather than treating a non-rejection as support [@roth2022]. Under a strict 0.05-standard-deviation bound, mathematics achieves equivalence and language does not, while the package's default bounds are too wide to be informative (Appendix B).
+
+# Limitations {#sec-limitations}
+
+Four limitations bear on what has been estimated, in order of how much they constrain it.
+
+**The sign depends on the counterfactual trend.** Estimators that compare against not-yet-treated schools give small positives; estimators that impose one common trend give negatives (@sec-rob-sensitivity). The disagreement survives the two explanations tested for it (@sec-results-diagnosis), and traces mostly to one adoption cohort. But that is an attribution, not a resolution: the cohort is also the largest single source of identifying variation, so it cannot be removed without changing the estimand, and every result that excludes it is a probe rather than a preferred estimate.
+
+**The estimand is local to assessed schools.** *Aprender* does not reach the smallest schools, and the same size-dependent coverage decides which schools appear in a later wave — and so support a longer horizon at all (@sec-data-sources). The weighted estimates show only that the per-school effect does not carry over proportionally to the per-pupil one; they do not show that effects are larger in small schools, which would require holding rurality, composition, province and cohort fixed.
+
+**Measurement error, and not classical.** Some `r fhm("of which left in the comparison group")` five-hour schools sit in the comparison group, and the misclassification is clustered by jurisdiction and correlated with cohort. The resulting bias is of unknown sign and magnitude: contamination of the comparison group would compress the contrast only under monotone positive effects, and neither holds here — so these estimates are not a lower bound.
+
+**A school-level intention to treat.** The parameter compares schools by the regime they operate, not by the hours any grade-6 cohort received, and treatment is recorded over the whole primary cycle rather than grade 6 alone (@sec-strategy-estimand). Arithmetic forces grade-6 exposure in most treated school-years, and restricting to the schools where it is certain moves the two subjects in opposite directions (@sec-rob-implement) — so misalignment does not generate the results. But the estimates are not invariant to it: peer effects, resource reallocation and compositional change can move the school- and pupil-level parameters apart in either direction.
+
+# Conclusion {#sec-discussion}
+
+This dissertation asked whether the expansion of extended- and full-day schooling raised grade-6 achievement in Argentine primary education, and for whom. Three answers follow. First, the administrative statistics used to monitor expansion do not cleanly measure genuine extension of the school day: the RA records many five-hour schools under the same category as genuine six-hour extension, does so unevenly across jurisdictions, and the federal programme sharply increased the number of schools at precisely that measurement margin. Second, the data do not provide robustly identified evidence that the expansion raised achievement in either subject. The pooled event-time estimate combines schools observed at materially different calendar distances from their first switch, and the corresponding pooled placebo can conceal offsetting pre-treatment differences across those timing classes. More generally, estimators that impose different counterfactual trends do not agree, and the diagnostics explain enough of that disagreement to prevent any single positive estimate from carrying the causal conclusion. Third, effects tend to be larger in more disadvantaged schools across two independently constructed measures, but the evidence is too imprecise for more than an exploratory pattern in the point estimates. The central methodological lesson is therefore not that one modern estimator dominates another, but that the diagnostics determine how much causal weight any of them can bear.
+
+A null is not an absence of information here, and the theory says why: if instructional time is an input with diminishing returns, an additional hour buys most where the day is shortest (@sec-lit-time), and Argentina's *jornada simple* is a four-hour shift day, so the prior was favourable. It is expensive information — abandoning a shift system raises the cost of primary provision by between a quarter and three-fifths [@orkin2013], and regional reviews already judged extended-day reform less cost-effective than the alternatives [@holland2015; @contreras2023] — so a null matters precisely because the policy continues to absorb a substantial budget [@arzola2011]. What it does not settle is whether the policy is worth its cost: the same literature documents more consistent effects on dropout, on socio-emotional outcomes and on maternal labour supply [@berthelon2011; @contreras2023], none of which this design measures, so a null on test scores removes the justification most often invoked for the longer day and not the others. Those outcomes are where the case for the policy may well rest, and where the next study should look.
+
+Three fronts follow, and on each the implication and the research it calls for are one point rather than two. On measurement, the coverage statistics reported against a twenty-year legal commitment do not measure the thing the commitment is about, and the fix is administrative rather than methodological: a census item recording daily hours, or participation in the specific programme, would supply directly what this dissertation had to reconstruct from a director questionnaire. On content, the additional hours were mandated for reading, writing and mathematical literacy [@cfe426_2022; @cfe470_2024] and no gain in those domains is detected, which points the binding question at what happens inside the added time rather than at how much time is added — the conditionality the cross-national evidence has repeatedly found [@lavy2015; @rivkin2015; @ganimian2016] — and separating a lengthened day from a changed one would require classroom-level data the administrative sources do not carry. On implementation, adoption is not permanent, so a policy evaluated as though adoption were an absorbing transition is being evaluated for something that did not happen: a constraint on the estimand rather than a main finding, but the feature a ministry can act on most directly.
+
+What this dissertation establishes about achievement is bounded and worth stating exactly. The data do not support the claim that expanding the school day raised grade-6 performance in mathematics or language. They also do not support the claim that the effect is zero: the intervals across estimators remain wide enough to contain effects that would matter for policy in either direction. Given that the policy has been national law for two decades and that the statistics used to report progress towards it measure something else, both halves of that sentence are findings.
+
+# References {.unnumbered}
+
+::: {#refs}
+:::
+
+\newpage
+
+# Appendix {.unnumbered #sec-appendix}
+
+```{=latex}
+\setstretch{1.25}
+```
+
+## A. Implementation and treatment measurement {.unnumbered}
+
+```{r}
+#| label: tbl-cohorts
+#| tbl-cap: "Adoption cohorts."
+# Built rather than dumped: the raw file carries snake_case variable names, and a
+# variable name is not a column heading. Counts take the thousands separator the
+# rest of the manuscript uses.
+.ac <- read_out("03_adoption_cohorts.csv")
+if (!is.null(.ac)) {
+  kbl(data.table(.ac$cohort, fmtn(.ac$schools), fmtn(.ac$in_estimation_sample)),
+      booktabs = TRUE, linesep = "", align = c("l", "r", "r"),
+      col.names = c("Cohort", "Schools", "In estimation sample")) |>
+    kable_styling(latex_options = "HOLD_position") |>
+    tbl_note(paste0(
+      "Primary schools by the calendar year in which they first cross the treatment threshold. Schools already treated in 2011 are left-censored and are not a 2011 cohort. Annual school census. \\emph{Schools} counts every primary school that first ",
+      "crosses the treatment threshold in that year, anywhere in the census; ",
+      "\\emph{in estimation sample} counts the subset that also carries an ",
+      "\\emph{Aprender} score and therefore contributes to the estimates. The gap ",
+      "between the two columns is assessment coverage, not attrition: it is small ",
+      "in every adopting cohort and large among the never-treated, because the ",
+      "schools the assessment does not reach are smaller and much less often ",
+      "treated (\\S4.1)."))
+} else exhibit_tbl("03_adoption_cohorts.csv", digits = 0)
+```
+
+Two implementation details qualify what the doubly-robust specification means. Both concern the subsample it is fitted on rather than the identification of the primary estimand.
+
+The first is which schools it drops. Callaway--Sant'Anna requires absorbing treatment, so it is fitted on schools that never contract — but "never contracts" is evaluated on the six assessment waves rather than on the annual census, so a school that adopts, contracts and re-adopts between two waves is retained. The two readings are far apart: `r rv("6 outcome waves only (estimation sample)")`% of ever-treated schools revert when reversal is measured across waves, against `r rv("RA annual history (all schools)")`% on the annual record (@tbl-reversion), and the annual figure is the correct one because reversal is a property of that record. The subsample is therefore absorbing *as observed at the assessment waves* rather than absorbing in fact, so the claim that the estimator's identifying assumption holds by construction is exact only for the specifications built on the annual rule.
+
+The second is how its adoption cohorts are dated: by the first wave at which a school is observed treated, not by the calendar year of adoption. Because the 2022 wave is a sample rather than a census, only schools drawn into it can belong to that cohort, which holds `r csz(2022)` schools against `r csz(2023)` in the cohort that follows it. Membership there is decided by the assessment's sampling design rather than by when a school adopted, and the cell is smaller still in the doubly-robust subsample — small enough to be what makes that estimator fail at the 75% cut-off, which is why the treatment-definition grid is estimated with the primary estimator instead (@tbl-rob-treatdef).
+
+The exhibits below support @sec-results-rollout: separating genuine six-hour extension from the five-hour day leaves the mathematics pre-trend in place (@fig-app-genuine), against the counts of each schedule among the schools the census records as extended in 2023 (@tbl-contamination). @fig-intensity shows what the binary indicator is tracking on the annual record.
+
+```{r}
+#| label: fig-app-genuine
+#| fig-cap: "Event study, genuine six-hour arm."
+#| out-width: 80%
+exhibit_fig("08_event_study_genuine.png")
+```
+
+```{=latex}
+\fignote{Genuine six-hour schools against untreated schools with no five-hour school among them; the five-hour arm is excluded rather than pooled into the comparison.}
+```
+
+```{r}
+#| label: tbl-balance
+#| tbl-cap: "Baseline (2016) characteristics of schools that ever cross the treatment threshold against schools that never do."
+exhibit_tbl("03_baseline_balance.csv",
+            cols = c("variable", "ever_treated", "never_treated", "std_difference"))
+```
+
+```{r}
+#| label: fig-intensity
+#| fig-cap: "Expanded-day share around first adoption."
+exhibit_fig("06_adoption_intensity.png")
+```
+
+```{=latex}
+\fignote{Annual census, pooled over schools that ever adopt; the dotted line is the 50\% treatment threshold.}
+```
+
+```{r}
+#| label: tbl-reversion
+#| tbl-cap: "Reversal accounting: share of ever-treated schools that revert."
+exhibit_tbl("11_reversal_accounting.csv", digits = 1)
+```
+
+```{r}
+#| label: tbl-switching
+#| tbl-cap: "How the treatment moves between consecutive assessment waves, in the estimation sample."
+.mv <- read_out("03_treatment_transitions.csv")
+.sw <- read_out("03_switches_per_school.csv")
+.switching <- if (!is.null(.mv) && !is.null(.sw))
+  rbind(data.table(Quantity = paste("Transitions:", .mv[order(-delta_D)]$direction),
+                   Count    = .mv[order(-delta_D)]$transitions,
+                   `%`      = .mv[order(-delta_D)]$pct),
+        data.table(Quantity = paste0("Schools switching ", .sw$switches,
+                                     ifelse(.sw$switches == 1, " time", " times")),
+                   Count    = .sw$schools,
+                   `%`      = .sw$pct))
+exhibit_tbl("03_treatment_transitions.csv + 03_switches_per_school.csv",
+            digits = 2, dt = .switching,
+            note = paste0(
+              "The first block counts school-wave transitions by direction; the ",
+              "second counts schools by how many times they switch. Percentages ",
+              "are within block. These are wave-to-wave counts and are not ",
+              "comparable with the reversal accounting above, which measures ",
+              "reversal on the fifteen-wave annual census history."))
+```
+
+```{r}
+#| label: tbl-contamination
+#| tbl-cap: "Genuine six-hour extension against five-hour days among 2023 census-treated schools: stock against flow."
+exhibit_tbl("08_contamination_2023.csv")
+```
+
+## B. Estimator disagreement and identification {.unnumbered}
+
+These exhibits support @sec-results-diagnosis. The dynamic profile is erratic rather than accumulating (@fig-app-fectdyn); matched event time shows the two estimator families diverging on the same sample (@tbl-app-matched, @tbl-lfl), on estimates whose full-sample counterparts are in @tbl-fect; the carryover and lead-by-lead forensics reject the two candidate explanations (@tbl-app-carryover, @tbl-app-leads, @tbl-excl2023); and the identifying-variation check shows that the convergence observed after excluding the 2023 cohort is not merely a loss of identifying variation (@tbl-app-idvar). @tbl-app-cdhboot and @tbl-app-resampling carry the province-level inference of @sec-rob-sensitivity.
+
+Equivalence testing under the package's default bounds is uninformative: the thresholds `r ft("language equivalence (default bound)", "tost_threshold")` and `r ft("maths equivalence (default bound)", "tost_threshold")` are several times the effects being tested. Under a strict bound of 0.05 standard deviations both subjects achieve equivalence, at *p* = `r ft("language equivalence (bound 0.05)", "tost_equiv_p")` in language and *p* = `r ft("maths equivalence (bound 0.05)", "tost_equiv_p")` in mathematics: every pre-treatment period lies inside the bound, even though the joint test rejects zero. 
+
+```{r}
+#| label: fig-app-fectdyn
+#| fig-cap: "FEct estimates by event time."
+#| out-width: 80%
+exhibit_fig("11_fect_dynamic.png")
+```
+
+```{=latex}
+\fignote{Imputing the counterfactual rather than differencing against a comparison group lets every pre-period enter, so the window is wider than the body event study's.}
+```
+
+```{r}
+#| label: tbl-app-matched
+#| tbl-cap: "Matched event time on one common sample: CDH vs FEct by event time (SD units)."
+exhibit_tbl("11b_dynamic_matched.csv")
+```
+
+```{r}
+#| label: tbl-app-carryover
+#| tbl-cap: "Carryover test: FEct with and without post-exit waves removed (SD units)."
+exhibit_tbl("11_fect_carryover.csv")
+```
+
+```{r}
+#| label: tbl-app-leads
+#| tbl-cap: "Pre-trend forensics: lead-by-lead placebo estimates (CS event study)."
+exhibit_tbl("11c_pretrend_leads.csv")
+```
+
+```{r}
+#| label: tbl-app-idvar
+#| tbl-cap: "Identifying variation retained when the 2023 cohort is excluded."
+exhibit_tbl("11d_identifying_variation.csv", digits = 1)
+```
+
+```{r}
+#| label: tbl-app-cdhboot
+#| tbl-cap: "The primary estimator under three inference procedures."
+.cb <- read_out("06q_cdh_bootstrap.csv")
+if (!is.null(.cb)) {
+  z <- .cb[order(subject, parameter)]
+  kbl(z[, .(Subject = subject, Parameter = parameter,
+            Estimate = sprintf("%.3f", att),
+            `s.e. school` = sprintf("%.3f", se_school),
+            `s.e. province` = sprintf("%.3f", se_province),
+            `s.e. bootstrap` = sprintf("%.3f", se_boot_package),
+            `t school` = sprintf("%.2f", att / se_school),
+            `t province` = sprintf("%.2f", att / se_province),
+            `t bootstrap` = sprintf("%.2f", att / se_boot_package))],
+      booktabs = TRUE, linesep = "", align = c("l", "l", rep("r", 7))) |>
+    kable_styling(latex_options = c("HOLD_position", "scale_down")) |>
+    tbl_note(paste0(
+      "The point estimate is the same in every column; only the uncertainty attached to it changes. de Chaisemartin--D'Haultf\\oe{}uille, binary treatment, headline ",
+      "specification (two horizons, two placebos), estimation sample. Columns ",
+      "three and four are the command's analytic cluster-robust variance at the ",
+      "school and at the province; column five is its nonparametric pairs cluster ",
+      "bootstrap over provinces, 999 replications. No column is authoritative: the ",
+      "analytic province formula rests on asymptotics with few effective clusters, ",
+      "and the pairs bootstrap requires independent information the same clusters ",
+      "must supply. They are reported together so the reader can see how much of ",
+      "the apparent precision is a property of the procedure."))
+} else kbl(data.frame(Status = "exhibit pending: 06q_cdh_bootstrap.csv"),
+           booktabs = TRUE, linesep = "")
+```
+
+```{r}
+#| label: tbl-app-resampling
+#| tbl-cap: "Province-level resampling inference for the regression-based estimators."
+.rsx <- read_out("06f_resampling.csv")
+if (!is.null(.rsx)) {
+  gv <- function(est, subj, lv, inf, col) {
+    v <- .rsx[estimator %like% est & subject == subj & cluster_level == lv &
+              inference %like% inf][[col]]
+    if (length(v) == 0) NA_real_ else v[1]
+  }
+  fm <- function(x, d = 3) if (is.na(x)) "---" else sprintf(paste0("%.", d, "f"), x)
+  spec <- list(list("TWFE", "wild", "wild cluster"), list("FEct", "nonparametric", "pairs cluster"))
+  tab <- rbindlist(lapply(spec, function(s) rbindlist(lapply(c("language", "mathematics"), function(sb) {
+    # TWFE's school and province columns are the analytic cluster-robust errors;
+    # FEct has no analytic variance, so both of its columns are bootstrap errors.
+    ia <- if (s[[1]] == "TWFE") "analytic" else "nonparametric"
+    lo <- gv(s[[1]], sb, "province", s[[2]], "ci_lo"); hi <- gv(s[[1]], sb, "province", s[[2]], "ci_hi")
+    data.table(Estimator = s[[1]], Subject = sb,
+               Estimate      = fm(gv(s[[1]], sb, "school", ia, "att")),
+               `s.e. school` = fm(gv(s[[1]], sb, "school", ia, "se")),
+               `s.e. prov.`  = fm(gv(s[[1]], sb, "province", ia, "se")),
+               `p analytic`  = if (s[[1]] == "TWFE")
+                                 fm(gv(s[[1]], sb, "province", "analytic", "p")) else "---",
+               `p resampled` = fm(gv(s[[1]], sb, "province", s[[2]], "p")),
+               `95\\% CI`    = if (is.na(lo)) "---" else sprintf("[%.3f, %.3f]", lo, hi),
+               Scheme        = s[[3]])
+  }))))
+  kbl(tab, booktabs = TRUE, linesep = "", escape = FALSE,
+      align = c("l", "l", rep("r", 5), "c", "l")) |>
+    kable_styling(latex_options = c("HOLD_position", "scale_down")) |>
+    tbl_note(paste0(
+      "The resampling scheme is not the same for the two, and the difference is a property of the estimand rather than a choice. Estimation sample, both estimators on the same panel, treatment as defined in ",
+      "\\S4.2. TWFE is a static two-way fixed-effects coefficient, so its school and ",
+      "province columns are analytic cluster-robust errors and its resampled column is ",
+      "the restricted wild cluster bootstrap with Rademacher weights, 999 replications, ",
+      "with the interval obtained by test inversion. FEct has no analytic variance: both ",
+      "of its standard errors are nonparametric cluster bootstraps, at the school and at ",
+      "the province, 1,000 replications. The wild scheme is defined on regression ",
+      "residuals and is the better behaved of the two with few clusters, so only the ",
+      "linear model can receive it. The resampled p-values are therefore NOT comparable ",
+      "across the two estimators as measures of evidential strength."))
+} else kbl(data.frame(Status = "exhibit pending: 06f_resampling.csv"),
+           booktabs = TRUE, linesep = "")
+```
+
+```{r}
+#| label: tbl-fect
+#| tbl-cap: "Full-sample estimates: FEct vs the benchmark (SD units)."
+exhibit_tbl("11_fect_results.csv")
+```
+
+```{r}
+#| label: tbl-lfl
+#| tbl-cap: "Same sample, same treatment: estimates grouped by counterfactual-trend assumption."
+exhibit_tbl("11b_like_for_like.csv")
+```
+
+```{r}
+#| label: tbl-excl2023
+#| tbl-cap: "Excluding the 2023 cohort (diagnostic probe): FEct estimates and pre-trend tests by sample."
+exhibit_tbl("11c_sample_grid.csv")
+```
+
+## C. Secondary outcomes and heterogeneity {.unnumbered}
+
+**Grade-progression trajectories: a composition check.** The census supplies a secondary outcome measured annually rather than in waves, with twelve pre-treatment periods instead of two. Neither component moves: non-promotion is `r np_att` percentage points (95% CI `r np_lo` to `r np_hi`) against an untreated mean of `r np_base`, and dropout is indistinguishable from zero in every specification (@tbl-app-traj, @fig-traj). This is a design check more than a result. A repeated cross-section is threatened by the possibility that the measured average moved because a different kind of pupil sat the assessment, and treatment that leaves repetition and dropout unchanged does not reconfigure the pool being tested — evidence of compositional non-response, not a test of parallel trends in test scores.
+
+The same secondary outcome invites comparison with the closest Argentine antecedent, but the two are less comparable than they first appear. Nistal (2022) reports a 23% reduction in grade retention over 2011--2019, on a broader object than this design targets: retention pooled across all primary grades, under a treatment that counts any extended-regime enrolment, and excluding full-day schools. What this dissertation observes is narrower — grade-6 non-promotion at the primary threshold — and because retention concentrates in the early grades, a grade-6 null neither reproduces nor contradicts a primary-wide reduction. Applied to the untreated mean here their relative effect would be about `r np_en` percentage points, below the lower bound of the interval above; but the difference in grade coverage, treatment definition and sample makes this a point of context, not a replication test.
+
+The exhibits below carry the full grade-progression results across specifications, and the complete heterogeneity grid supporting @sec-results-hetero (@tbl-app-hetero), with the 2023-cohort exclusion repeated within each subgroup and the pre-specified interaction test in @tbl-app-interaction.
+
+```{r}
+#| label: tbl-app-traj
+#| tbl-cap: "Grade-progression effects (non-promotion and dropout), by specification."
+exhibit_tbl("09_trajectory_results.csv",
+            note = paste0(
+              "Effects and standard errors are in percentage points; the untreated ",
+              "mean is the mean of the outcome among untreated school-years, so ",
+              "effects can be read as relative changes."))
+```
+
+```{r}
+#| label: tbl-app-hetero
+#| tbl-cap: "Heterogeneity, full grid: ATT by dimension and subgroup, full sample vs excluding the 2023 cohort, with switcher counts and N (SD units)."
+exhibit_tbl("10_heterogeneity_results.csv")
+```
+
+```{r}
+#| label: tbl-app-interaction
+#| tbl-cap: "Interaction test: most- vs least-disadvantaged quartile (Q1 vs Q4), full sample and excluding the 2023 cohort."
+exhibit_tbl("10_interaction_test.csv")
+```
+
+```{r}
+#| label: fig-traj
+#| fig-cap: "Grade progression by event time."
+exhibit_fig("09_event_study_trajectories.png")
+```
+
+```{=latex}
+\fignote{Primary estimator on the annual census panel. The outcome is grade 6 alone, not retention pooled across the primary cycle.}
+```
+
+## Declarations {.unnumbered}
+
+*Use of Generative AI.* I used a generative AI assistant (Claude, by Anthropic) in preparing this dissertation, for language editing (grammar, clarity, and concision), for improving the formatting and presentation of tables and figures, and for editorial feedback on drafts. The research design, analysis, results, and their interpretation are entirely my own, as is all final wording, which I reviewed and take responsibility for.
+
+*Replication package.* All code necessary to replicate the findings is available at <https://github.com/LSE-62628-2526/dissertation-my499-school-time-achievement>.

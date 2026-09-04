@@ -1,0 +1,7 @@
+year,wave_type,schools,matched_ra,match_rate
+2016,census,19443,19417,99.87
+2018,census,19937,19915,99.89
+2021,census,19971,19905,99.67
+2022,sample,3764,3758,99.84
+2023,census,19820,19775,99.77
+2025,census,19520,19436,99.57

@@ -1,0 +1,97 @@
+definition,design,subject,spec,parameter,estimate,se,switchers
+main,five censuses,language,1 horizon,ATE,-0.0272,0.009,
+main,five censuses,language,1 horizon,Effect_1,-0.0272,0.009,5506
+main,five censuses,language,1 horizon,Placebo_1,-0.0071,0.0102,4146
+main,five censuses,language,2 horizons,ATE,-0.021,0.0094,
+main,five censuses,language,2 horizons,Effect_1,-0.0272,0.009,5506
+main,five censuses,language,2 horizons,Effect_2,-0.0069,0.0101,4157
+main,five censuses,language,2 horizons,Placebo_1,-0.0071,0.0102,4146
+main,five censuses,language,2 horizons,Placebo_2,0.0366,0.0152,2378
+main,five censuses,language,"2 horizons, pupil-weighted",ATE,0.0105,0.0066,
+main,five censuses,language,"2 horizons, pupil-weighted",Effect_1,-0.003,0.0058,5506
+main,five censuses,language,"2 horizons, pupil-weighted",Effect_2,0.0236,0.0067,4157
+main,five censuses,language,"2 horizons, pupil-weighted",Placebo_1,0.0032,0.0063,4146
+main,five censuses,language,"2 horizons, pupil-weighted",Placebo_2,0.0338,0.0104,2378
+main,five censuses,language,"2 horizons, same switchers",ATE,-0.0256,0.0105,
+main,five censuses,language,"2 horizons, same switchers",Effect_1,-0.0371,0.0102,4157
+main,five censuses,language,"2 horizons, same switchers",Effect_2,-0.0069,0.0101,4157
+main,five censuses,language,"2 horizons, same switchers",Placebo_1,-0.0196,0.0129,2275
+main,five censuses,language,"2 horizons, same switchers",Placebo_2,0.0401,0.0151,2275
+main,five censuses,mathematics,1 horizon,ATE,-0.0532,0.0108,
+main,five censuses,mathematics,1 horizon,Effect_1,-0.0532,0.0108,5466
+main,five censuses,mathematics,1 horizon,Placebo_1,-0.025,0.0129,4113
+main,five censuses,mathematics,2 horizons,ATE,-0.0633,0.0115,
+main,five censuses,mathematics,2 horizons,Effect_1,-0.0532,0.0108,5466
+main,five censuses,mathematics,2 horizons,Effect_2,-0.0587,0.0127,4142
+main,five censuses,mathematics,2 horizons,Placebo_1,-0.025,0.0129,4113
+main,five censuses,mathematics,2 horizons,Placebo_2,0.0214,0.0177,2367
+main,five censuses,mathematics,"2 horizons, pupil-weighted",ATE,-0.0285,0.0082,
+main,five censuses,mathematics,"2 horizons, pupil-weighted",Effect_1,-0.0158,0.007,5466
+main,five censuses,mathematics,"2 horizons, pupil-weighted",Effect_2,-0.0347,0.0087,4142
+main,five censuses,mathematics,"2 horizons, pupil-weighted",Placebo_1,-0.0102,0.0084,4113
+main,five censuses,mathematics,"2 horizons, pupil-weighted",Placebo_2,0.0448,0.0122,2367
+main,five censuses,mathematics,"2 horizons, same switchers",ATE,-0.0737,0.0129,
+main,five censuses,mathematics,"2 horizons, same switchers",Effect_1,-0.0682,0.0122,4128
+main,five censuses,mathematics,"2 horizons, same switchers",Effect_2,-0.0584,0.0127,4128
+main,five censuses,mathematics,"2 horizons, same switchers",Placebo_1,-0.0508,0.0167,2255
+main,five censuses,mathematics,"2 horizons, same switchers",Placebo_2,0.0284,0.0176,2255
+main,six waves,language,1 horizon,ATE,0.0033,0.0106,
+main,six waves,language,1 horizon,Effect_1,0.0033,0.0106,3064
+main,six waves,language,1 horizon,Placebo_1,0.016,0.0163,1258
+main,six waves,language,2 horizons,ATE,0.0147,0.0114,
+main,six waves,language,2 horizons,Effect_1,0.0033,0.0106,3064
+main,six waves,language,2 horizons,Effect_2,0.033,0.0149,1495
+main,six waves,language,2 horizons,Placebo_1,0.016,0.0163,1258
+main,six waves,language,2 horizons,Placebo_2,-3e-04,0.0247,467
+main,six waves,language,"2 horizons, pupil-weighted",ATE,0.0134,0.0088,
+main,six waves,language,"2 horizons, pupil-weighted",Effect_1,0.006,0.0072,3064
+main,six waves,language,"2 horizons, pupil-weighted",Effect_2,0.0219,0.0113,1495
+main,six waves,language,"2 horizons, pupil-weighted",Placebo_1,-0.0028,0.0108,1258
+main,six waves,language,"2 horizons, pupil-weighted",Placebo_2,-9e-04,0.0159,467
+main,six waves,language,"2 horizons, same switchers",ATE,0.0225,0.0157,
+main,six waves,language,"2 horizons, same switchers",Effect_1,0.0043,0.0145,1495
+main,six waves,language,"2 horizons, same switchers",Effect_2,0.033,0.0149,1495
+main,six waves,language,"2 horizons, same switchers",Placebo_1,0.0122,0.0227,445
+main,six waves,language,"2 horizons, same switchers",Placebo_2,-0.0034,0.0244,445
+main,six waves,mathematics,1 horizon,ATE,0.0118,0.0129,
+main,six waves,mathematics,1 horizon,Effect_1,0.0118,0.0129,3052
+main,six waves,mathematics,1 horizon,Placebo_1,0.0227,0.0193,1251
+main,six waves,mathematics,2 horizons,ATE,0.0277,0.0139,
+main,six waves,mathematics,2 horizons,Effect_1,0.0118,0.0129,3052
+main,six waves,mathematics,2 horizons,Effect_2,0.0508,0.0187,1490
+main,six waves,mathematics,2 horizons,Placebo_1,0.0227,0.0193,1251
+main,six waves,mathematics,2 horizons,Placebo_2,0.0634,0.0313,466
+main,six waves,mathematics,"2 horizons, pupil-weighted",ATE,0.0198,0.0104,
+main,six waves,mathematics,"2 horizons, pupil-weighted",Effect_1,0.013,0.0087,3052
+main,six waves,mathematics,"2 horizons, pupil-weighted",Effect_2,0.0248,0.0139,1490
+main,six waves,mathematics,"2 horizons, pupil-weighted",Placebo_1,0.0137,0.0122,1251
+main,six waves,mathematics,"2 horizons, pupil-weighted",Placebo_2,0.0175,0.0199,466
+main,six waves,mathematics,"2 horizons, same switchers",ATE,0.0435,0.0191,
+main,six waves,mathematics,"2 horizons, same switchers",Effect_1,0.0215,0.0174,1488
+main,six waves,mathematics,"2 horizons, same switchers",Effect_2,0.0507,0.0187,1488
+main,six waves,mathematics,"2 horizons, same switchers",Placebo_1,0.0636,0.0287,442
+main,six waves,mathematics,"2 horizons, same switchers",Placebo_2,0.0505,0.0304,442
+main,three censuses,language,1 horizon,ATE,-0.0415,0.0101,
+main,three censuses,language,1 horizon,Effect_1,-0.0415,0.0101,4483
+main,three censuses,language,1 horizon,Placebo_1,0.027,0.0171,1005
+main,three censuses,language,2 horizons,ATE,-0.0375,0.0103,
+main,three censuses,language,2 horizons,Effect_1,-0.0415,0.0101,4483
+main,three censuses,language,2 horizons,Effect_2,-0.0228,0.0117,3124
+main,three censuses,language,"2 horizons, pupil-weighted",ATE,0.0026,0.0067,
+main,three censuses,language,"2 horizons, pupil-weighted",Effect_1,-0.0093,0.0061,4483
+main,three censuses,language,"2 horizons, pupil-weighted",Effect_2,0.0178,0.0073,3124
+main,three censuses,language,"2 horizons, same switchers",ATE,-0.0477,0.012,
+main,three censuses,language,"2 horizons, same switchers",Effect_1,-0.0612,0.0121,3124
+main,three censuses,language,"2 horizons, same switchers",Effect_2,-0.0228,0.0117,3124
+main,three censuses,mathematics,1 horizon,ATE,-0.0754,0.012,
+main,three censuses,mathematics,1 horizon,Effect_1,-0.0754,0.012,4447
+main,three censuses,mathematics,1 horizon,Placebo_1,0.0402,0.0211,1002
+main,three censuses,mathematics,2 horizons,ATE,-0.0984,0.0126,
+main,three censuses,mathematics,2 horizons,Effect_1,-0.0754,0.012,4447
+main,three censuses,mathematics,2 horizons,Effect_2,-0.1078,0.0147,3112
+main,three censuses,mathematics,"2 horizons, pupil-weighted",ATE,-0.0546,0.0087,
+main,three censuses,mathematics,"2 horizons, pupil-weighted",Effect_1,-0.0281,0.0077,4447
+main,three censuses,mathematics,"2 horizons, pupil-weighted",Effect_2,-0.0741,0.0095,3112
+main,three censuses,mathematics,"2 horizons, same switchers",ATE,-0.1222,0.0146,
+main,three censuses,mathematics,"2 horizons, same switchers",Effect_1,-0.1083,0.0143,3099
+main,three censuses,mathematics,"2 horizons, same switchers",Effect_2,-0.107,0.0146,3099

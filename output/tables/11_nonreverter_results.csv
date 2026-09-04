@@ -1,0 +1,7 @@
+estimator,sample,subject,att,se
+CDH,non-reverting,language,0.0254,0.0172
+CDH,non-reverting,mathematics,0.0632,0.0213
+CS (absorbing by construction),non-reverting,language,0.0186,0.0377
+CS (absorbing by construction),non-reverting,mathematics,0.0825,0.041
+TWFE,non-reverting,language,-0.042,0.0111
+TWFE,non-reverting,mathematics,-0.0773,0.0136
